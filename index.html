@@ -1,1 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CoreEight</title>
 
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #050307;
+      color: #fff2c7;
+      font-family: "Courier New", monospace;
+      overflow: hidden;
+      cursor: none;
+    }
+
+    body.ready {
+      overflow: auto;
+    }
+
+    .boot-screen {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #050307;
+      transition: opacity 500ms ease, visibility 500ms ease;
+      z-index: 10;
+    }
+
+    body.ready .boot-screen {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .pixel-grid {
+      position: absolute;
+      inset: -40px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        radial-gradient(circle at 30% 20%, rgba(255, 30, 20, 0.25), transparent 28%),
+        radial-gradient(circle at 70% 80%, rgba(0, 255, 150, 0.12), transparent 30%);
+      background-size: 18px 18px, 18px 18px, 100% 100%, 100% 100%;
+      animation: driftGrid 5s steps(8) infinite;
+    }
+
+    .noise {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,0.7) 0 1px, transparent 1px),
+        radial-gradient(circle, rgba(255,40,20,0.5) 0 1px, transparent 1px);
+      background-size: 31px 37px, 47px 53px;
+      opacity: 0.28;
+      animation: noiseMove 700ms steps(2) infinite;
+    }
+
+    .boot-content {
+      position: relative;
+      width: min(90vw, 900px);
+      text-align: center;
+      z-index: 1;
+    }
+
+    .title {
+      position: relative;
+      margin: 0;
+      font-size: clamp(3rem, 11vw, 8rem);
+      line-height: 1;
+      letter-spacing: 0;
+      color: #ffe6a8;
+      font-weight: 900;
+      text-shadow:
+        0 8px 0 #25040a,
+        7px 0 0 rgba(255, 40, 20, 0.75),
+        -7px 0 0 rgba(0, 200, 255, 0.55),
+        0 0 28px rgba(255, 180, 80, 0.8);
+    }
+
+    .title::after {
+      content: "CoreEight";
+      position: absolute;
+      inset: 0;
+      color: #ff2a16;
+      text-shadow:
+        0 0 16px rgba(255, 42, 22, 0.95),
+        0 0 42px rgba(255, 42, 22, 0.7);
+      clip-path: inset(0 calc(100% - var(--load, 0%)) 0 0);
+    }
+
+    .boot-copy {
+      margin: 26px 0 0;
+      color: #ffb05d;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: clamp(0.75rem, 2vw, 1rem);
+    }
+
+    .load-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: min(620px, 86vw);
+      margin: 34px auto 0;
+    }
+
+    .load-track {
+      flex: 1;
+      height: 16px;
+      border: 1px solid rgba(255, 90, 40, 0.55);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: inset 0 0 20px rgba(255, 50, 20, 0.18);
+      overflow: hidden;
+    }
+
+    .load-bar {
+      width: var(--load, 0%);
+      height: 100%;
+      background: linear-gradient(90deg, #7c0707, #ff2a16, #ffd1c6, #ff2a16);
+      box-shadow: 0 0 20px rgba(255, 42, 22, 0.85);
+      transition: width 120ms linear;
+    }
+
+    .load-number {
+      min-width: 52px;
+      color: #6dffba;
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .glitch-flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent),
+        repeating-linear-gradient(0deg, transparent 0 9px, rgba(255, 30, 20, 0.35) 9px 11px);
+      z-index: 20;
+    }
+
+    body.breach .glitch-flash {
+      animation: breach 450ms steps(4) forwards;
+    }
+
+    .dashboard-placeholder {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      opacity: 0;
+      transform: scale(1.02);
+      transition: opacity 500ms ease, transform 700ms ease;
+    }
+
+    body.ready .dashboard-placeholder {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .placeholder-panel {
+      width: min(900px, 92vw);
+      padding: 28px;
+      border: 1px solid rgba(255, 90, 40, 0.45);
+      border-radius: 8px;
+      background: rgba(16, 8, 12, 0.86);
+      box-shadow: 0 0 40px rgba(255, 42, 22, 0.18);
+    }
+
+    .placeholder-panel h2 {
+      margin: 0 0 12px;
+      color: #6dffba;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .placeholder-panel p {
+      margin: 0;
+      color: #ffcf91;
+      line-height: 1.6;
+    }
+
+    .custom-cursor {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 34px;
+      height: 34px;
+      pointer-events: none;
+      z-index: 99;
+      filter: drop-shadow(0 0 10px rgba(255, 42, 22, 0.9));
+    }
+
+    .custom-cursor svg {
+      width: 100%;
+      height: 100%;
+      shape-rendering: crispEdges;
+    }
+
+    @keyframes driftGrid {
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(-18px, 18px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+    }
+
+    @keyframes noiseMove {
+      0% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(10px, -8px);
+      }
+
+      100% {
+        transform: translate(0, 0);
+      }
+    }
+
+    @keyframes breach {
+      0% {
+        opacity: 0;
+        transform: translateX(-40%);
+      }
+
+      35% {
+        opacity: 1;
+        transform: translateX(15%) skewX(20deg);
+      }
+
+      70% {
+        opacity: 0.8;
+        transform: translateX(-8%) skewX(-18deg);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <section class="boot-screen" aria-label="CoreEight loading screen">
+    <div class="pixel-grid"></div>
+    <div class="noise"></div>
+
+    <div class="boot-content">
+      <h1 class="title">CoreEight</h1>
+      <p class="boot-copy">Booting Chip-8 development core</p>
+
+      <div class="load-row">
+        <div class="load-track">
+          <div class="load-bar"></div>
+        </div>
+        <div class="load-number">0%</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="glitch-flash"></div>
+
+  <main class="dashboard-placeholder">
+    <section class="placeholder-panel">
+      <h2>Dashboard Online</h2>
+      <p>
+        Hour 1 sets up the retro boot sequence, loading animation, glitch transition,
+        custom cursor, and the first placeholder for the CoreEight dashboard.
+      </p>
+    </section>
+  </main>
+
+  <div class="custom-cursor" aria-hidden="true">
+    <svg viewBox="0 0 32 32">
+      <path fill="#ffe8b8" d="M6 2h6v12h2V6h5v9h2V9h5v13h-2v5H12v-3H9v-4H6z"/>
+      <path fill="#ff2a16" d="M12 2h2v12h-2zM19 7h2v9h-2zM26 11h2v12h-2zM12 27h12v3H12z"/>
+      <path fill="#23040a" d="M4 0h10v2H6v16H4zm8 4h8v2h-6v10h-2zm7 3h8v2h-6v9h-2zm7 2h2v2h-2zm2 2h2v14h-2zm-4 14h4v2h-4zm-12 2h12v2H12zm-3-3h3v3H9zm-3-4h3v4H6zm-2-2h2v2H4z"/>
+    </svg>
+  </div>
+
+  <script>
+    const root = document.documentElement;
+    const loadNumber = document.querySelector(".load-number");
+    const cursor = document.querySelector(".custom-cursor");
+
+    let progress = 0;
+
+    const loader = setInterval(() => {
+      progress += Math.ceil(Math.random() * 6);
+
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(loader);
+
+        document.body.classList.add("breach");
+
+        setTimeout(() => {
+          document.body.classList.add("ready");
+        }, 450);
+      }
+
+      root.style.setProperty("--load", `${progress}%`);
+      loadNumber.textContent = `${progress}%`;
+    }, 120);
+
+    window.addEventListener("pointermove", (event) => {
+      cursor.style.transform = `translate(${event.clientX - 3}px, ${event.clientY - 3}px)`;
+    });
+  </script>
+</body>
+</html>
