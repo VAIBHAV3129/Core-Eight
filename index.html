@@ -152,41 +152,119 @@
       animation: breach 450ms steps(4) forwards;
     }
 
-    .dashboard-placeholder {
+    .app {
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 32px;
+      padding: 20px;
       opacity: 0;
       transform: scale(1.02);
       transition: opacity 500ms ease, transform 700ms ease;
     }
 
-    body.ready .dashboard-placeholder {
+    body.ready .app {
       opacity: 1;
       transform: scale(1);
     }
 
-    .placeholder-panel {
-      width: min(900px, 92vw);
-      padding: 28px;
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 64px;
+      padding: 12px 16px;
       border: 1px solid rgba(255, 90, 40, 0.45);
       border-radius: 8px;
       background: rgba(16, 8, 12, 0.86);
-      box-shadow: 0 0 40px rgba(255, 42, 22, 0.18);
+      box-shadow: 0 0 40px rgba(255, 42, 22, 0.14);
     }
 
-    .placeholder-panel h2 {
+    .brand {
+      color: #ffe6a8;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 0 18px rgba(255, 180, 80, 0.7);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav button {
+      border: 1px solid rgba(255, 90, 40, 0.45);
+      border-radius: 6px;
+      background: #14070c;
+      color: #fff2c7;
+      padding: 10px 12px;
+      text-transform: uppercase;
+      cursor: none;
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      border-color: #ff2a16;
+      color: #ffffff;
+      box-shadow: 0 0 18px rgba(255, 42, 22, 0.45);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      padding: 22px;
+      border: 1px solid rgba(255, 90, 40, 0.45);
+      border-radius: 8px;
+      background: rgba(16, 8, 12, 0.86);
+      box-shadow: 0 0 40px rgba(255, 42, 22, 0.14);
+    }
+
+    .panel h1,
+    .panel h2 {
       margin: 0 0 12px;
       color: #6dffba;
       text-transform: uppercase;
       letter-spacing: 0.12em;
     }
 
-    .placeholder-panel p {
+    .panel p {
       margin: 0;
+      max-width: 860px;
       color: #ffcf91;
       line-height: 1.6;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .feature-card {
+      min-height: 120px;
+      padding: 16px;
+      border: 1px solid rgba(109, 255, 186, 0.3);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.28);
+    }
+
+    .feature-card h3 {
+      margin: 0 0 10px;
+      color: #fff2c7;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+
+    .feature-card p {
+      color: #c99462;
+      font-size: 0.92rem;
     }
 
     .custom-cursor {
@@ -204,6 +282,17 @@
       width: 100%;
       height: 100%;
       shape-rendering: crispEdges;
+    }
+
+    @media (max-width: 900px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @keyframes driftGrid {
@@ -278,12 +367,51 @@
 
   <div class="glitch-flash"></div>
 
-  <main class="dashboard-placeholder">
-    <section class="placeholder-panel">
-      <h2>Dashboard Online</h2>
-      <p>
-        Hello World , Welcome to the CoreEight dashboard.
-      </p>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">CoreEight</div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <button class="active" type="button">Dashboard</button>
+        <button type="button">IDE</button>
+        <button type="button">Memory</button>
+        <button type="button">Debugger</button>
+        <button type="button">Arcade</button>
+        <button type="button">Settings</button>
+      </nav>
+    </header>
+
+    <section class="workspace">
+      <article class="panel">
+        <h1>Chip-8 IDE and Virtual Machine</h1>
+        <p>
+          CoreEight is a web-based integrated development environment and cycle-accurate
+          virtual machine for the Chip-8 architecture, featuring a live memory visualizer,
+          interactive register debugger, and integrated native assembly compiler.
+        </p>
+
+        <div class="feature-grid">
+          <section class="feature-card">
+            <h3>IDE</h3>
+            <p>Assembly editor, syntax feedback, ROM tools, and compiler output.</p>
+          </section>
+
+          <section class="feature-card">
+            <h3>Virtual Machine</h3>
+            <p>Chip-8 CPU, timers, display, stack, keypad, and ROM execution loop.</p>
+          </section>
+
+          <section class="feature-card">
+            <h3>Memory</h3>
+            <p>Live 4KB memory map with program counter, read, and write highlights.</p>
+          </section>
+
+          <section class="feature-card">
+            <h3>Debugger</h3>
+            <p>Interactive V0-VF register editing, system registers, timers, and stack tracing.</p>
+          </section>
+        </div>
+      </article>
     </section>
   </main>
 
