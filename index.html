@@ -9,13 +9,9 @@
     :root {
       --bg: #050307;
       --panel: rgba(18, 7, 10, 0.88);
-      --panel-strong: rgba(28, 8, 10, 0.95);
       --border: rgba(255, 61, 36, 0.48);
       --red: #ff2a16;
-      --red-soft: #ff6b4d;
-      --red-deep: #740808;
       --amber: #ffe0a3;
-      --muted: #d68661;
       --green: #6dffba;
     }
 
@@ -55,6 +51,30 @@
       z-index: 10;
     }
 
+    .boot-screen::before,
+    .boot-screen::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .boot-screen::before {
+      inset: 18px;
+      border: 2px solid rgba(255, 61, 36, 0.72);
+      box-shadow:
+        0 0 18px rgba(255, 42, 22, 0.45),
+        inset 0 0 18px rgba(255, 42, 22, 0.25);
+    }
+
+    .boot-screen::after {
+      inset: 30px;
+      border: 1px solid rgba(255, 224, 163, 0.58);
+      box-shadow:
+        0 0 14px rgba(255, 224, 163, 0.22),
+        inset 0 0 14px rgba(255, 224, 163, 0.12);
+    }
+
     body.ready .boot-screen {
       opacity: 0;
       visibility: hidden;
@@ -87,7 +107,7 @@
       position: relative;
       width: min(90vw, 900px);
       text-align: center;
-      z-index: 1;
+      z-index: 3;
     }
 
     .title {
@@ -104,10 +124,6 @@
         -5px 0 0 rgba(255, 106, 78, 0.45),
         0 0 30px rgba(255, 42, 22, 0.72),
         0 0 70px rgba(255, 42, 22, 0.36);
-    }
-    .title::after {
-       display: none;
-}
     }
 
     .boot-copy {
@@ -154,21 +170,6 @@
       text-align: right;
       font-weight: 700;
       text-shadow: 0 0 14px rgba(255, 42, 22, 0.8);
-    }
-
-    .glitch-flash {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0;
-      background:
-        linear-gradient(90deg, transparent, rgba(255, 78, 50, 0.9), transparent),
-        repeating-linear-gradient(0deg, transparent 0 9px, rgba(255, 30, 20, 0.38) 9px 11px);
-      z-index: 20;
-    }
-
-    body.breach .glitch-flash {
-      animation: breach 450ms steps(4) forwards;
     }
 
     .app {
@@ -367,28 +368,6 @@
         transform: translate(0, 0);
       }
     }
-
-    @keyframes breach {
-      0% {
-        opacity: 0;
-        transform: translateX(-40%);
-      }
-
-      35% {
-        opacity: 1;
-        transform: translateX(15%) skewX(20deg);
-      }
-
-      70% {
-        opacity: 0.8;
-        transform: translateX(-8%) skewX(-18deg);
-      }
-
-      100% {
-        opacity: 0;
-        transform: translateX(100%);
-      }
-    }
   </style>
 </head>
 
@@ -409,8 +388,6 @@
       </div>
     </div>
   </section>
-
-  <div class="glitch-flash"></div>
 
   <main class="app">
     <header class="topbar">
@@ -460,12 +437,12 @@
 
       <article class="panel" id="ide">
         <h2>Integrated Assembly Compiler</h2>
-        <p>Assembly editing, syntax highlighting, compiler diagnostics, and ROM export will live here.</p>
+        <p>Assembly editing, syntax highlighting, compiler diagnostics, and ROM export.</p>
       </article>
 
       <article class="panel" id="memory">
         <h2>Live Memory Visualizer</h2>
-        <p>The Chip-8 4KB memory map will appear here with read, write, and program counter highlights.</p>
+        <p>The Chip-8 4KB memory map with read, write, and program counter highlights.</p>
 
         <div class="mock-grid" aria-label="Memory preview">
           <span class="mock-cell">00</span>
@@ -481,17 +458,17 @@
 
       <article class="panel" id="debugger">
         <h2>Interactive Register Debugger</h2>
-        <p>Register editing, system register readouts, timers, and stack tracing .</p>
+        <p>Register editing, system register readouts, timers, and stack tracing will be built into this view.</p>
       </article>
 
       <article class="panel" id="arcade">
         <h2>Arcade</h2>
-        <p>Four Chip-8 arcade games with CRT display and retro controls.</p>
+        <p>Four Chip-8 arcade games will be playable here through the CRT display and retro controls.</p>
       </article>
 
       <article class="panel" id="settings">
         <h2>Settings</h2>
-        <p>Theme controls, CRT effects, sound, CPU speed, emulation quirks, storage, and data options .</p>
+        <p>Theme controls, CRT effects, sound, CPU speed, emulation quirks, storage, and data options will live here.</p>
       </article>
     </section>
   </main>
@@ -520,11 +497,9 @@
         progress = 100;
         clearInterval(loader);
 
-        document.body.classList.add("breach");
-
         setTimeout(() => {
           document.body.classList.add("ready");
-        }, 450);
+        }, 250);
       }
 
       root.style.setProperty("--load", `${progress}%`);
