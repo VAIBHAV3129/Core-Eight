@@ -8,46 +8,39 @@
   <style>
     :root {
       --bg: #050307;
-      --panel: rgba(18, 7, 10, 0.9);
-      --panel-dark: rgba(8, 3, 6, 0.95);
-      --panel-soft: rgba(40, 12, 12, 0.62);
+      --panel: rgba(18, 7, 10, 0.92);
+      --panel2: rgba(8, 3, 6, 0.96);
       --border: rgba(255, 61, 36, 0.48);
-      --border-soft: rgba(255, 224, 163, 0.18);
+      --text: #ffe0a3;
+      --muted: #c99462;
       --red: #ff2a16;
-      --amber: #ffe0a3;
-      --amber-dim: #c99462;
       --green: #6dffba;
       --cyan: #63d8ff;
-      --shadow: rgba(255, 42, 22, 0.18);
       --editor-size: 15px;
     }
 
     body[data-theme="matrix"] {
       --bg: #020604;
-      --panel: rgba(3, 20, 11, 0.92);
-      --panel-dark: rgba(0, 10, 5, 0.96);
-      --panel-soft: rgba(0, 40, 20, 0.62);
+      --panel: rgba(3, 20, 11, 0.94);
+      --panel2: rgba(0, 10, 5, 0.98);
       --border: rgba(109, 255, 186, 0.5);
+      --text: #d7ffe8;
+      --muted: #78c99a;
       --red: #39ff88;
-      --amber: #d7ffe8;
-      --amber-dim: #78c99a;
       --green: #39ff88;
       --cyan: #9affcf;
-      --shadow: rgba(57, 255, 136, 0.15);
     }
 
     body[data-theme="cyber"] {
       --bg: #f2ead9;
-      --panel: rgba(255, 248, 232, 0.92);
-      --panel-dark: rgba(235, 226, 208, 0.96);
-      --panel-soft: rgba(255, 255, 255, 0.68);
-      --border: rgba(173, 29, 41, 0.42);
+      --panel: rgba(255, 248, 232, 0.94);
+      --panel2: rgba(235, 226, 208, 0.98);
+      --border: rgba(173, 29, 41, 0.45);
+      --text: #1d2830;
+      --muted: #5d6670;
       --red: #b51d2b;
-      --amber: #1d2830;
-      --amber-dim: #5d6670;
       --green: #005f56;
       --cyan: #004e7c;
-      --shadow: rgba(181, 29, 43, 0.12);
     }
 
     * {
@@ -59,42 +52,67 @@
       margin: 0;
       min-height: 100%;
       background: var(--bg);
-      color: var(--amber);
+      color: var(--text);
       font-family: "Courier New", monospace;
-      cursor: none;
     }
 
     body {
       overflow: hidden;
+      cursor: none;
     }
 
     body.ready {
       overflow-y: auto;
     }
 
+    body.system-cursor {
+      cursor: auto;
+    }
+
+    body.system-cursor button,
+    body.system-cursor input,
+    body.system-cursor select {
+      cursor: pointer;
+    }
+
+    body.system-cursor .custom-cursor {
+      display: none;
+    }
+
     body.pixelated {
       image-rendering: pixelated;
     }
 
-    body.pixelated .panel,
-    body.pixelated button,
-    body.pixelated .status-item,
-    body.pixelated .control-card,
-    body.pixelated .game-card,
-    body.pixelated .setting-row {
-      border-radius: 0;
+    body.pixelated::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.18;
+      background:
+        linear-gradient(90deg, var(--red) 2px, transparent 2px),
+        linear-gradient(var(--red) 2px, transparent 2px);
+      background-size: 32px 32px;
     }
 
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
+    body.pixelated .panel,
+    body.pixelated .topbar,
+    body.pixelated .statusbar,
+    body.pixelated button,
+    body.pixelated .status-item,
+    body.pixelated .card,
+    body.pixelated .setting-row,
+    body.pixelated .screen,
+    body.pixelated .vm-debug {
+      border-radius: 0;
+      box-shadow: 6px 6px 0 rgba(255, 42, 22, 0.22);
     }
 
     button,
     input,
     select {
+      font: inherit;
       cursor: none;
     }
 
@@ -190,7 +208,6 @@
       text-transform: uppercase;
       letter-spacing: 0.15em;
       font-size: clamp(0.75rem, 2vw, 1rem);
-      text-shadow: 0 0 18px rgba(255, 42, 22, 0.5);
     }
 
     .load-row {
@@ -206,9 +223,6 @@
       height: 16px;
       border: 1px solid rgba(255, 72, 44, 0.68);
       background: rgba(24, 2, 4, 0.76);
-      box-shadow:
-        inset 0 0 20px rgba(255, 42, 22, 0.24),
-        0 0 22px rgba(255, 42, 22, 0.18);
       overflow: hidden;
     }
 
@@ -216,9 +230,7 @@
       width: var(--load, 0%);
       height: 100%;
       background: linear-gradient(90deg, #8f0808, #ff2a16, #ff6042, #ff2a16);
-      box-shadow:
-        0 0 18px rgba(255, 42, 22, 0.9),
-        0 0 36px rgba(255, 42, 22, 0.45);
+      box-shadow: 0 0 18px rgba(255, 42, 22, 0.9);
       transition: width 120ms linear;
     }
 
@@ -227,10 +239,11 @@
       color: #ff8b70;
       text-align: right;
       font-weight: 700;
-      text-shadow: 0 0 14px rgba(255, 42, 22, 0.8);
     }
 
     .app {
+      position: relative;
+      z-index: 2;
       min-height: 100vh;
       padding: 18px;
       opacity: 0;
@@ -246,13 +259,13 @@
     .topbar,
     .statusbar,
     .panel,
-    .control-card,
-    .game-card,
-    .setting-row {
+    .card,
+    .setting-row,
+    .vm-debug {
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--panel);
-      box-shadow: 0 0 34px var(--shadow);
+      box-shadow: 0 0 30px rgba(255, 42, 22, 0.12);
     }
 
     .topbar {
@@ -268,15 +281,23 @@
       display: grid;
       gap: 3px;
       min-width: 230px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
       text-transform: uppercase;
       line-height: 0.92;
+      padding: 0;
+    }
+
+    .brand:hover {
+      filter: drop-shadow(0 0 12px var(--red));
     }
 
     .brand .core {
-      color: var(--amber);
       font-size: clamp(1.55rem, 4vw, 2.8rem);
       font-weight: 900;
-      text-shadow: 0 0 20px var(--shadow), 0 4px 0 rgba(0, 0, 0, 0.5);
+      text-shadow: 0 0 20px rgba(255, 42, 22, 0.26), 0 4px 0 rgba(0, 0, 0, 0.5);
     }
 
     .brand .eight {
@@ -284,7 +305,6 @@
       font-size: clamp(1.1rem, 3vw, 2rem);
       font-weight: 900;
       letter-spacing: 0.28em;
-      text-shadow: 0 0 18px var(--shadow);
     }
 
     .nav {
@@ -296,22 +316,35 @@
     }
 
     .nav button,
-    .control-button {
+    .control-button,
+    .vm-debug button {
       border: 1px solid rgba(255, 90, 40, 0.45);
       border-radius: 6px;
-      background: var(--panel-dark);
-      color: var(--amber);
+      background: var(--panel2);
+      color: var(--text);
       padding: 10px 12px;
       text-transform: uppercase;
     }
 
+    .nav button[data-panel="dashboard"] {
+      min-width: 132px;
+      border-color: var(--red);
+    }
+
     .nav button:hover,
     .nav button.active,
-    .control-button:hover {
+    .control-button:hover,
+    .vm-debug button:hover {
       border-color: var(--red);
       color: #ffffff;
-      box-shadow: 0 0 18px var(--shadow);
+      box-shadow: 0 0 18px rgba(255, 42, 22, 0.38);
       transform: translateY(-1px);
+    }
+
+    .nav button[data-panel="dashboard"].active {
+      background:
+        linear-gradient(90deg, rgba(255, 42, 22, 0.34), transparent),
+        var(--panel2);
     }
 
     .statusbar {
@@ -325,13 +358,13 @@
     .status-item {
       min-height: 54px;
       padding: 10px;
-      border: 1px solid var(--border-soft);
+      border: 1px solid rgba(255, 224, 163, 0.18);
       background: rgba(0, 0, 0, 0.18);
     }
 
     .status-label {
       display: block;
-      color: var(--amber-dim);
+      color: var(--muted);
       font-size: 0.76rem;
       text-transform: uppercase;
     }
@@ -373,7 +406,7 @@
     .panel p {
       margin: 0;
       max-width: 860px;
-      color: var(--amber-dim);
+      color: var(--muted);
       line-height: 1.6;
     }
 
@@ -384,22 +417,12 @@
       margin-top: 18px;
     }
 
-    .hero-panel,
-    .crt-preview,
-    .editor-shell,
-    .terminal,
-    .debug-grid,
-    .timeline,
-    .settings-grid {
-      border: 1px solid var(--border-soft);
+    .work-surface {
+      border: 1px solid rgba(255, 224, 163, 0.18);
       border-radius: 8px;
       background:
         linear-gradient(135deg, rgba(255, 42, 22, 0.1), transparent 42%),
         rgba(0, 0, 0, 0.24);
-    }
-
-    .hero-panel {
-      min-height: 310px;
       padding: 18px;
     }
 
@@ -415,7 +438,7 @@
       align-items: center;
       gap: 10px;
       margin-top: 16px;
-      color: var(--amber-dim);
+      color: var(--muted);
     }
 
     .speed-row input {
@@ -423,68 +446,68 @@
       accent-color: var(--red);
     }
 
-    .control-grid {
+    .card-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
     }
 
-    .control-card {
+    .card {
       padding: 14px;
       min-height: 118px;
-      background: var(--panel-dark);
+      background: var(--panel2);
     }
 
-    .control-card strong {
+    .card strong {
       display: block;
       color: var(--cyan);
       margin-bottom: 8px;
       text-transform: uppercase;
     }
 
-    .control-card span {
-      color: var(--amber-dim);
+    .card span {
+      color: var(--muted);
       line-height: 1.45;
     }
 
-    .crt-preview {
-      margin-top: 18px;
-      padding: 18px;
-    }
-
     .screen {
-      position: relative;
       display: grid;
       grid-template-columns: repeat(16, 1fr);
       gap: 4px;
       width: min(520px, 100%);
       aspect-ratio: 2 / 1;
+      margin-top: 16px;
       padding: 14px;
-      border: 12px solid var(--panel-dark);
+      border: 12px solid var(--panel2);
       border-radius: 14px;
       background: #010302;
-      box-shadow:
-        inset 0 0 28px rgba(109, 255, 186, 0.16),
-        0 0 24px var(--shadow);
       overflow: hidden;
-    }
-
-    .screen::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 5px);
-      pointer-events: none;
     }
 
     .screen-pixel {
       background: rgba(109, 255, 186, 0.08);
-      box-shadow: inset 0 0 6px rgba(109, 255, 186, 0.08);
     }
 
     .screen-pixel.on {
       background: var(--green);
       box-shadow: 0 0 10px var(--green);
+    }
+
+    .vm-debug {
+      margin-top: 18px;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.28);
+    }
+
+    #vm-log {
+      min-height: 160px;
+      margin: 10px 0 0;
+      padding: 12px;
+      background: #050307;
+      color: #6dffba;
+      overflow: auto;
+      white-space: pre-wrap;
+      border: 1px solid rgba(109, 255, 186, 0.26);
     }
 
     .editor-shell {
@@ -493,12 +516,15 @@
       min-height: 300px;
       overflow: hidden;
       margin-top: 18px;
+      border: 1px solid rgba(255, 224, 163, 0.18);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.24);
     }
 
     .line-numbers {
       padding: 14px 10px;
-      color: var(--amber-dim);
-      border-right: 1px solid var(--border-soft);
+      color: var(--muted);
+      border-right: 1px solid rgba(255, 224, 163, 0.18);
       background: rgba(0,0,0,0.22);
       text-align: right;
       line-height: 1.65;
@@ -509,7 +535,7 @@
       margin: 0;
       padding: 14px;
       overflow: auto;
-      color: var(--amber);
+      color: var(--text);
       font-size: var(--editor-size);
       line-height: 1.65;
     }
@@ -535,6 +561,9 @@
       padding: 14px;
       color: var(--green);
       line-height: 1.5;
+      border: 1px solid rgba(255, 224, 163, 0.18);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.24);
     }
 
     .memory-grid {
@@ -550,14 +579,13 @@
       place-items: center;
       border: 1px solid rgba(255, 90, 40, 0.32);
       background: rgba(0, 0, 0, 0.28);
-      color: var(--amber);
+      color: var(--text);
       font-size: 0.85rem;
     }
 
     .byte.pc {
       border-color: #ffe66d;
       color: #ffe66d;
-      box-shadow: 0 0 12px rgba(255, 230, 109, 0.35);
     }
 
     .byte.read {
@@ -575,18 +603,17 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-top: 18px;
-      padding: 14px;
     }
 
     .register {
       padding: 10px;
-      border: 1px solid var(--border-soft);
+      border: 1px solid rgba(255, 224, 163, 0.18);
       background: rgba(0,0,0,0.22);
     }
 
     .register span {
       display: block;
-      color: var(--amber-dim);
+      color: var(--muted);
       font-size: 0.8rem;
     }
 
@@ -604,16 +631,10 @@
       margin-top: 18px;
     }
 
-    .game-card {
-      min-height: 190px;
-      padding: 16px;
-      background: var(--panel-dark);
-    }
-
     .game-art {
       height: 76px;
       margin-bottom: 14px;
-      border: 1px solid var(--border-soft);
+      border: 1px solid rgba(255, 224, 163, 0.18);
       background:
         linear-gradient(90deg, transparent 45%, var(--red) 45% 55%, transparent 55%),
         repeating-linear-gradient(0deg, rgba(109,255,186,0.16) 0 8px, transparent 8px 16px),
@@ -625,6 +646,9 @@
       gap: 12px;
       margin-top: 18px;
       padding: 16px;
+      border: 1px solid rgba(255, 224, 163, 0.18);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.24);
     }
 
     .timeline-item {
@@ -641,7 +665,6 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
       margin-top: 18px;
-      padding: 14px;
     }
 
     .setting-row {
@@ -651,18 +674,18 @@
       gap: 14px;
       min-height: 58px;
       padding: 12px;
-      background: var(--panel-dark);
+      background: var(--panel2);
     }
 
     .setting-row span {
-      color: var(--amber);
+      color: var(--text);
       text-transform: uppercase;
     }
 
     .setting-row small {
       display: block;
       margin-top: 3px;
-      color: var(--amber-dim);
+      color: var(--muted);
       text-transform: none;
     }
 
@@ -676,17 +699,53 @@
       position: fixed;
       left: 0;
       top: 0;
-      width: 34px;
-      height: 34px;
+      width: 26px;
+      height: 26px;
       pointer-events: none;
       z-index: 99;
-      filter: drop-shadow(0 0 10px rgba(255, 42, 22, 0.9));
     }
 
-    .custom-cursor svg {
-      width: 100%;
-      height: 100%;
-      shape-rendering: crispEdges;
+    .custom-cursor.hand {
+      border-left: 8px solid var(--text);
+      border-top: 8px solid var(--text);
+      box-shadow: 4px 4px 0 var(--red);
+    }
+
+    .custom-cursor.crosshair {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--green);
+      box-shadow: inset 14px 0 0 transparent, 0 0 10px var(--green);
+    }
+
+    .custom-cursor.crosshair::before,
+    .custom-cursor.crosshair::after {
+      content: "";
+      position: absolute;
+      background: var(--green);
+    }
+
+    .custom-cursor.crosshair::before {
+      left: 14px;
+      top: -8px;
+      width: 1px;
+      height: 44px;
+    }
+
+    .custom-cursor.crosshair::after {
+      left: -8px;
+      top: 14px;
+      width: 44px;
+      height: 1px;
+    }
+
+    .custom-cursor.pixel {
+      width: 22px;
+      height: 22px;
+      background: var(--text);
+      box-shadow:
+        6px 6px 0 var(--red),
+        12px 12px 0 rgba(0,0,0,0.45);
     }
 
     @media (max-width: 1050px) {
@@ -700,7 +759,7 @@
 
       .statusbar,
       .dashboard-layout,
-      .control-grid,
+      .card-grid,
       .settings-grid,
       .game-grid {
         grid-template-columns: 1fr;
@@ -716,31 +775,15 @@
     }
 
     @keyframes driftGrid {
-      0% {
-        transform: translate(0, 0);
-      }
-
-      50% {
-        transform: translate(-18px, 18px);
-      }
-
-      100% {
-        transform: translate(0, 0);
-      }
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(-18px, 18px); }
+      100% { transform: translate(0, 0); }
     }
 
     @keyframes noiseMove {
-      0% {
-        transform: translate(0, 0);
-      }
-
-      50% {
-        transform: translate(10px, -8px);
-      }
-
-      100% {
-        transform: translate(0, 0);
-      }
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(10px, -8px); }
+      100% { transform: translate(0, 0); }
     }
   </style>
 </head>
@@ -765,10 +808,10 @@
 
   <main class="app">
     <header class="topbar">
-      <div class="brand" aria-label="CoreEight">
+      <button class="brand" type="button" data-panel="dashboard">
         <span class="core">Core</span>
         <span class="eight">Eight</span>
-      </div>
+      </button>
 
       <nav class="nav" aria-label="Main navigation">
         <button class="active" type="button" data-panel="dashboard">Dashboard</button>
@@ -781,14 +824,14 @@
       </nav>
     </header>
 
-    <section class="statusbar" aria-label="System status">
+    <section class="statusbar">
       <div class="status-item">
         <span class="status-label">Machine State</span>
-        <span class="status-value">Paused</span>
+        <span class="status-value" id="machine-state">Paused</span>
       </div>
       <div class="status-item">
         <span class="status-label">Loaded ROM</span>
-        <span class="status-value">Demo Shell</span>
+        <span class="status-value">Scratch ROM</span>
       </div>
       <div class="status-item">
         <span class="status-label">CPU Clock</span>
@@ -810,14 +853,14 @@
         </p>
 
         <div class="dashboard-layout">
-          <section class="hero-panel">
+          <section class="work-surface">
             <h2>Development Core</h2>
             <p>
               Load ROMs, run code, step through opcodes, inspect memory, edit registers,
-              and move from engineering mode into a five-game arcade cabinet.
+              and switch into the arcade workspace from the same machine state.
             </p>
 
-            <div class="transport" aria-label="Emulator controls">
+            <div class="transport">
               <button class="control-button" type="button">Run</button>
               <button class="control-button" type="button">Pause</button>
               <button class="control-button" type="button">Step</button>
@@ -829,26 +872,29 @@
               <input id="speed-slider" type="range" min="500" max="2000" value="700">
             </label>
 
-            <div class="crt-preview">
-              <h3>CRT Preview</h3>
-              <div class="screen" id="screen-preview" aria-label="Chip-8 display preview"></div>
-            </div>
+            <div class="screen" id="screen-preview"></div>
+
+            <section class="vm-debug">
+              <h2>VM Scratchpad</h2>
+              <button type="button" id="vm-reset">Reset VM</button>
+              <pre id="vm-log"></pre>
+            </section>
           </section>
 
-          <section class="control-grid">
-            <div class="control-card">
+          <section class="card-grid">
+            <div class="card">
               <strong>Assembler</strong>
               <span>Native Chip-8 assembly with labels, constants, diagnostics, and ROM export.</span>
             </div>
-            <div class="control-card">
+            <div class="card">
               <strong>Debugger</strong>
               <span>Register editing, opcode stepping, stack tracing, timers, and breakpoints.</span>
             </div>
-            <div class="control-card">
+            <div class="card">
               <strong>Memory</strong>
               <span>4KB visual map with PC, read, write, search, and byte inspection tools.</span>
             </div>
-            <div class="control-card">
+            <div class="card">
               <strong>Arcade</strong>
               <span>BRIX, PONG, SPACE INVADERS, MAZE RUNNER, and TETRIS in cabinet mode.</span>
             </div>
@@ -859,8 +905,7 @@
       <article class="panel" id="ide">
         <h2>Integrated Assembly Compiler</h2>
         <p>
-          The editor starts as a styled assembly workbench with line numbers, syntax colors,
-          and a compiler terminal prepared for live diagnostics.
+          The editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.
         </p>
 
         <div class="editor-shell">
@@ -878,63 +923,59 @@
           CORE ASM READY<br>
           0000: CLS<br>
           0002: LD V0, 0x08<br>
-          0004: LD V1, 0x10<br>
-          STATUS: editor shell connected to CoreEight UI state
+          0004: LD V1, 0x10
         </div>
       </article>
 
       <article class="panel" id="memory">
         <h2>Live Memory Visualizer</h2>
         <p>
-          The memory panel now has a real grid structure for byte cells. Program counter,
-          read activity, and write activity already have distinct visual states.
+          Memory bytes use separate visual states for the program counter, reads, and writes.
         </p>
 
-        <div class="memory-grid" id="memory-grid" aria-label="Memory preview grid"></div>
+        <div class="memory-grid" id="memory-grid"></div>
       </article>
 
       <article class="panel" id="debugger">
         <h2>Interactive Register Debugger</h2>
         <p>
-          Register cards establish the future editing surface for V0 through VF, plus
-          system register readouts for I, PC, SP, delay timer, and sound timer.
+          Registers V0 through VF share space with system values for I, PC, SP, delay timer, and sound timer.
         </p>
 
-        <div class="debug-grid" id="debug-grid" aria-label="Register preview grid"></div>
+        <div class="debug-grid" id="debug-grid"></div>
       </article>
 
       <article class="panel" id="arcade">
         <h2>Arcade</h2>
         <p>
-          Arcade mode is planned around five Chip-8 games that exercise display rendering,
-          keypad input, timers, collision, scoring, and audio.
+          Five Chip-8 games exercise display rendering, keypad input, timers, collision, scoring, and audio.
         </p>
 
         <div class="game-grid">
-          <section class="game-card">
+          <section class="card">
             <div class="game-art"></div>
             <h3>BRIX</h3>
             <p>Breakout-style paddle control, collision checks, and brick clearing.</p>
           </section>
-          <section class="game-card">
+          <section class="card">
             <div class="game-art"></div>
             <h3>PONG</h3>
             <p>Classic paddle duel for input timing, scoring, and screen refresh.</p>
           </section>
-          <section class="game-card">
+          <section class="card">
             <div class="game-art"></div>
             <h3>SPACE INVADERS</h3>
             <p>Alien shooter flow with sprites, movement, projectiles, and timers.</p>
           </section>
-          <section class="game-card">
+          <section class="card">
             <div class="game-art"></div>
             <h3>MAZE RUNNER</h3>
             <p>Grid navigation for keypad movement, collision, and memory tracing.</p>
           </section>
-          <section class="game-card">
+          <section class="card">
             <div class="game-art"></div>
             <h3>TETRIS</h3>
-            <p>Falling block puzzle logic adapted for the Chip-8 visual format.</p>
+            <p>Falling block logic adapted for the Chip-8 display format.</p>
           </section>
         </div>
       </article>
@@ -942,14 +983,14 @@
       <article class="panel" id="info">
         <h2>Chip-8 History</h2>
         <p>
-          Chip-8 began as an interpreted language for simple games and programs on
-          late-1970s microcomputers, then became a classic target for emulator authors.
+          Chip-8 began as an interpreted language for small games and programs on late-1970s
+          microcomputers. Its compact machine model made it a classic emulator project.
         </p>
 
         <div class="timeline">
           <div class="timeline-item">
             <strong>1970s</strong>
-            <p>Chip-8 appears on systems such as the COSMAC VIP, giving small computers a compact game language.</p>
+            <p>Chip-8 appears on systems such as the COSMAC VIP as a compact game language.</p>
           </div>
           <div class="timeline-item">
             <strong>Architecture</strong>
@@ -957,7 +998,7 @@
           </div>
           <div class="timeline-item">
             <strong>Emulation Culture</strong>
-            <p>Its small instruction set makes it ideal for learning CPU design, graphics timing, input, and debugging tools.</p>
+            <p>The small instruction set is useful for learning CPU loops, graphics timing, input, and debugging tools.</p>
           </div>
         </div>
       </article>
@@ -965,13 +1006,12 @@
       <article class="panel" id="settings">
         <h2>Settings</h2>
         <p>
-          CoreEight settings start with global theme control, pixelated rendering, editor scale,
-          and visual tuning that will expand into full IDE and visualizer customization.
+          Visual controls change the current workspace immediately.
         </p>
 
         <div class="settings-grid">
           <label class="setting-row">
-            <span>Theme <small>Switch the global color profile.</small></span>
+            <span>Theme <small>Global color profile.</small></span>
             <select id="theme-select">
               <option value="amber">Amber Cathode</option>
               <option value="matrix">Matrix Terminal</option>
@@ -980,22 +1020,27 @@
           </label>
 
           <label class="setting-row">
-            <span>Pixelated Effect <small>Applies sharper retro edges across themes.</small></span>
+            <span>Pixelated Effect <small>Large block grid and hard panel edges.</small></span>
             <input id="pixel-toggle" type="checkbox">
           </label>
 
           <label class="setting-row">
-            <span>Editor Font <small>Controls assembly editor text size.</small></span>
+            <span>Cursor Type <small>Pointer style for the workspace.</small></span>
+            <select id="cursor-select">
+              <option value="hand">Retro Hand</option>
+              <option value="crosshair">Crosshair</option>
+              <option value="pixel">Pixel Pointer</option>
+              <option value="system">System Cursor</option>
+            </select>
+          </label>
+
+          <label class="setting-row">
+            <span>Editor Font <small>Assembly editor text size.</small></span>
             <input id="editor-size" type="range" min="13" max="20" value="15">
           </label>
 
           <label class="setting-row">
-            <span>CRT Scanlines <small>Visual display overlay setting.</small></span>
-            <input type="checkbox" checked>
-          </label>
-
-          <label class="setting-row">
-            <span>Memory Density <small>Compact byte grid option.</small></span>
+            <span>Memory Density <small>Byte grid spacing.</small></span>
             <select>
               <option>Comfortable</option>
               <option>Compact</option>
@@ -1004,7 +1049,7 @@
           </label>
 
           <label class="setting-row">
-            <span>Register Format <small>Debugger value display base.</small></span>
+            <span>Register Format <small>Debugger value base.</small></span>
             <select>
               <option>Hexadecimal</option>
               <option>Decimal</option>
@@ -1016,33 +1061,32 @@
     </section>
   </main>
 
-  <div class="custom-cursor" aria-hidden="true">
-    <svg viewBox="0 0 32 32">
-      <path fill="#ffe8b8" d="M6 2h6v12h2V6h5v9h2V9h5v13h-2v5H12v-3H9v-4H6z"/>
-      <path fill="#ff2a16" d="M12 2h2v12h-2zM19 7h2v9h-2zM26 11h2v12h-2zM12 27h12v3H12z"/>
-      <path fill="#23040a" d="M4 0h10v2H6v16H4zm8 4h8v2h-6v10h-2zm7 3h8v2h-6v9h-2zm7 2h2v2h-2zm2 2h2v14h-2zm-4 14h4v2h-4zm-12 2h12v2H12zm-3-3h3v3H9zm-3-4h3v4H6zm-2-2h2v2H4z"/>
-    </svg>
-  </div>
+  <div class="custom-cursor hand" id="custom-cursor"></div>
 
   <script>
     const root = document.documentElement;
     const loadNumber = document.querySelector(".load-number");
-    const cursor = document.querySelector(".custom-cursor");
+    const cursor = document.querySelector("#custom-cursor");
     const navButtons = document.querySelectorAll(".nav button");
     const panels = document.querySelectorAll(".panel");
+    const brandButton = document.querySelector(".brand");
     const speedSlider = document.querySelector("#speed-slider");
     const speedValue = document.querySelector("#speed-value");
     const themeSelect = document.querySelector("#theme-select");
     const pixelToggle = document.querySelector("#pixel-toggle");
     const editorSize = document.querySelector("#editor-size");
+    const cursorSelect = document.querySelector("#cursor-select");
     const memoryGrid = document.querySelector("#memory-grid");
     const debugGrid = document.querySelector("#debug-grid");
     const screenPreview = document.querySelector("#screen-preview");
+    const vmResetButton = document.querySelector("#vm-reset");
+    const vmLog = document.querySelector("#vm-log");
+    const machineState = document.querySelector("#machine-state");
 
     let progress = 0;
 
     const loader = setInterval(() => {
-      progress += Math.ceil(Math.random() * 6);
+      progress += 5;
 
       if (progress >= 100) {
         progress = 100;
@@ -1055,22 +1099,31 @@
 
       root.style.setProperty("--load", `${progress}%`);
       loadNumber.textContent = `${progress}%`;
-    }, 120);
+    }, 100);
 
     window.addEventListener("pointermove", (event) => {
       cursor.style.transform = `translate(${event.clientX - 3}px, ${event.clientY - 3}px)`;
     });
 
+    function showPanel(panelId) {
+      navButtons.forEach((item) => item.classList.remove("active"));
+      panels.forEach((panel) => panel.classList.remove("active"));
+
+      const button = document.querySelector(`.nav button[data-panel="${panelId}"]`);
+      if (button) button.classList.add("active");
+
+      document.getElementById(panelId).classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     navButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        const panelId = button.dataset.panel;
-
-        navButtons.forEach((item) => item.classList.remove("active"));
-        panels.forEach((panel) => panel.classList.remove("active"));
-
-        button.classList.add("active");
-        document.getElementById(panelId).classList.add("active");
+        showPanel(button.dataset.panel);
       });
+    });
+
+    brandButton.addEventListener("click", () => {
+      showPanel("dashboard");
     });
 
     speedSlider.addEventListener("input", () => {
@@ -1089,80 +1142,123 @@
       root.style.setProperty("--editor-size", `${editorSize.value}px`);
     });
 
+    cursorSelect.addEventListener("change", () => {
+      cursor.className = `custom-cursor ${cursorSelect.value}`;
+      document.body.classList.toggle("system-cursor", cursorSelect.value === "system");
+    });
+
+    const chip8 = {
+      memory: new Uint8Array(4096),
+      v: new Uint8Array(16),
+      i: 0,
+      pc: 0x200,
+      stack: [],
+      delayTimer: 0,
+      soundTimer: 0,
+      running: false
+    };
+
+    function resetVm() {
+      chip8.memory.fill(0);
+      chip8.v.fill(0);
+
+      chip8.i = 0;
+      chip8.pc = 0x200;
+      chip8.stack = [];
+      chip8.delayTimer = 0;
+      chip8.soundTimer = 0;
+      chip8.running = false;
+
+      chip8.memory[0x200] = 0x00;
+      chip8.memory[0x201] = 0xE0;
+
+      machineState.textContent = "Paused";
+      printVmState("VM reset");
+      syncDebugGrid();
+    }
+
+    function hex(value, width) {
+      return value.toString(16).toUpperCase().padStart(width, "0");
+    }
+
+    function printVmState(label) {
+      vmLog.textContent =
+        `${label}\n\n` +
+        `PC: 0x${hex(chip8.pc, 3)}\n` +
+        `I:  0x${hex(chip8.i, 3)}\n` +
+        `DT: ${chip8.delayTimer}\n` +
+        `ST: ${chip8.soundTimer}\n` +
+        `Stack depth: ${chip8.stack.length}\n\n` +
+        `Memory[0x200]: 0x${hex(chip8.memory[0x200], 2)}\n` +
+        `Memory[0x201]: 0x${hex(chip8.memory[0x201], 2)}\n\n` +
+        `V registers:\n` +
+        Array.from(chip8.v)
+          .map((value, index) => `V${index.toString(16).toUpperCase()}: ${value}`)
+          .join("\n");
+    }
+
+    vmResetButton.addEventListener("click", resetVm);
+
     function buildScreenPreview() {
-      const fragment = document.createDocumentFragment();
+      const onPixels = [17, 18, 19, 20, 33, 49, 65, 81, 82, 83, 84, 36, 52, 68, 37, 38, 53, 69];
 
       for (let index = 0; index < 128; index += 1) {
         const pixel = document.createElement("i");
         pixel.className = "screen-pixel";
 
-        const x = index % 16;
-        const y = Math.floor(index / 16);
-
-        if (
-          y === 1 ||
-          y === 6 ||
-          x === 2 ||
-          x === 13 ||
-          (x > 5 && x < 10 && y > 2 && y < 5)
-        ) {
+        if (onPixels.includes(index)) {
           pixel.classList.add("on");
         }
 
-        fragment.appendChild(pixel);
+        screenPreview.appendChild(pixel);
       }
-
-      screenPreview.appendChild(fragment);
     }
 
     function buildMemoryGrid() {
-      const fragment = document.createDocumentFragment();
-
       for (let index = 0; index < 96; index += 1) {
         const cell = document.createElement("span");
-        const value = ((index * 17 + 224) & 255).toString(16).toUpperCase().padStart(2, "0");
-
         cell.className = "byte";
-        cell.textContent = value;
+        cell.textContent = hex(index, 2);
 
         if (index === 16) cell.classList.add("pc");
-        if (index % 19 === 0) cell.classList.add("read");
-        if (index % 31 === 0) cell.classList.add("write");
+        if (index === 24 || index === 25) cell.classList.add("read");
+        if (index === 40) cell.classList.add("write");
 
-        fragment.appendChild(cell);
+        memoryGrid.appendChild(cell);
       }
-
-      memoryGrid.appendChild(fragment);
     }
 
-    function buildDebugGrid() {
-      const fragment = document.createDocumentFragment();
+    function syncDebugGrid() {
+      debugGrid.innerHTML = "";
 
       for (let index = 0; index < 16; index += 1) {
         const register = document.createElement("div");
         const name = index.toString(16).toUpperCase();
-        const value = ((index * 13 + 8) & 255).toString(16).toUpperCase().padStart(2, "0");
 
         register.className = "register";
-        register.innerHTML = `<span>V${name}</span><strong>0x${value}</strong>`;
-        fragment.appendChild(register);
+        register.innerHTML = `<span>V${name}</span><strong>0x${hex(chip8.v[index], 2)}</strong>`;
+        debugGrid.appendChild(register);
       }
 
-      ["I: 0x2A0", "PC: 0x200", "SP: 0x03", "DT: 0x12"].forEach((item) => {
+      const system = [
+        ["I", `0x${hex(chip8.i, 3)}`],
+        ["PC", `0x${hex(chip8.pc, 3)}`],
+        ["SP", chip8.stack.length],
+        ["DT", chip8.delayTimer],
+        ["ST", chip8.soundTimer]
+      ];
+
+      system.forEach((item) => {
         const register = document.createElement("div");
-        const parts = item.split(": ");
-
         register.className = "register";
-        register.innerHTML = `<span>${parts[0]}</span><strong>${parts[1]}</strong>`;
-        fragment.appendChild(register);
+        register.innerHTML = `<span>${item[0]}</span><strong>${item[1]}</strong>`;
+        debugGrid.appendChild(register);
       });
-
-      debugGrid.appendChild(fragment);
     }
 
     buildScreenPreview();
     buildMemoryGrid();
-    buildDebugGrid();
+    resetVm();
   </script>
 </body>
 </html>
