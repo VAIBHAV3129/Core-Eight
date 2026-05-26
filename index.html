@@ -71,7 +71,8 @@
 
     body.system-cursor button,
     body.system-cursor input,
-    body.system-cursor select {
+    body.system-cursor select,
+    body.system-cursor a {
       cursor: pointer;
     }
 
@@ -104,16 +105,29 @@
     body.pixelated .card,
     body.pixelated .setting-row,
     body.pixelated .screen,
-    body.pixelated .vm-debug {
+    body.pixelated .vm-debug,
+    body.pixelated .credit-box,
+    body.pixelated .settings-footer {
       border-radius: 0;
       box-shadow: 6px 6px 0 rgba(255, 42, 22, 0.22);
     }
 
     button,
     input,
-    select {
+    select,
+    a {
       font: inherit;
       cursor: none;
+    }
+
+    a {
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #fff;
+      text-shadow: 0 0 12px var(--green);
     }
 
     .boot-screen {
@@ -261,7 +275,8 @@
     .panel,
     .card,
     .setting-row,
-    .vm-debug {
+    .vm-debug,
+    .settings-footer {
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--panel);
@@ -270,8 +285,8 @@
 
     .topbar {
       display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 22px;
+      grid-template-columns: auto auto 1fr;
+      gap: 18px;
       align-items: center;
       min-height: 86px;
       padding: 14px 18px;
@@ -305,6 +320,33 @@
       font-size: clamp(1.1rem, 3vw, 2rem);
       font-weight: 900;
       letter-spacing: 0.28em;
+    }
+
+    .credit-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      box-shadow: 0 0 12px rgba(255, 42, 22, 0.18);
+      transition: color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .credit-box:hover {
+      color: #fff;
+      border-color: var(--red);
+      box-shadow:
+        0 0 12px rgba(255, 42, 22, 0.55),
+        0 0 28px rgba(255, 42, 22, 0.28);
+      transform: translateY(-1px);
     }
 
     .nav {
@@ -593,11 +635,6 @@
       color: var(--green);
     }
 
-    .byte.write {
-      background: rgba(255, 42, 22, 0.18);
-      color: var(--red);
-    }
-
     .debug-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -693,6 +730,34 @@
     .setting-row input[type="range"] {
       accent-color: var(--red);
       max-width: 180px;
+    }
+
+    .settings-footer {
+      margin-top: 18px;
+      padding: 14px;
+      background: var(--panel2);
+    }
+
+    .settings-footer .credit-box {
+      margin-bottom: 12px;
+    }
+
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .source-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 10px;
+      border: 1px solid rgba(109, 255, 186, 0.35);
+      background: rgba(0, 0, 0, 0.22);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.86rem;
     }
 
     .custom-cursor {
@@ -813,6 +878,8 @@
         <span class="eight">Eight</span>
       </button>
 
+      <div class="credit-box">MADE BY L K VAIBHAV</div>
+
       <nav class="nav" aria-label="Main navigation">
         <button class="active" type="button" data-panel="dashboard">Dashboard</button>
         <button type="button" data-panel="ide">IDE</button>
@@ -908,9 +975,7 @@
 
       <article class="panel" id="ide">
         <h2>Integrated Assembly Compiler</h2>
-        <p>
-          The editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.
-        </p>
+        <p>The editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.</p>
 
         <div class="editor-shell">
           <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8</div>
@@ -933,27 +998,19 @@
 
       <article class="panel" id="memory">
         <h2>Live Memory Visualizer</h2>
-        <p>
-          Memory bytes use separate visual states for the program counter, reads, and writes.
-        </p>
-
+        <p>Memory bytes use separate visual states for the program counter, reads, and writes.</p>
         <div class="memory-grid" id="memory-grid"></div>
       </article>
 
       <article class="panel" id="debugger">
         <h2>Interactive Register Debugger</h2>
-        <p>
-          Registers V0 through VF share space with system values for I, PC, SP, delay timer, and sound timer.
-        </p>
-
+        <p>Registers V0 through VF share space with system values for I, PC, SP, delay timer, and sound timer.</p>
         <div class="debug-grid" id="debug-grid"></div>
       </article>
 
       <article class="panel" id="arcade">
         <h2>Arcade</h2>
-        <p>
-          Five Chip-8 games exercise display rendering, keypad input, timers, collision, scoring, and audio.
-        </p>
+        <p>Five Chip-8 games exercise display rendering, keypad input, timers, collision, scoring, and audio.</p>
 
         <div class="game-grid">
           <section class="card">
@@ -1009,9 +1066,7 @@
 
       <article class="panel" id="settings">
         <h2>Settings</h2>
-        <p>
-          Visual controls change the current workspace immediately.
-        </p>
+        <p>Visual controls change the current workspace immediately.</p>
 
         <div class="settings-grid">
           <label class="setting-row">
@@ -1061,6 +1116,19 @@
             </select>
           </label>
         </div>
+
+        <footer class="settings-footer">
+          <div class="credit-box">MADE BY L K VAIBHAV</div>
+
+          <div class="source-links">
+            <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank" rel="noopener noreferrer">
+              Source Code
+            </a>
+            <a href="https://vaibhav3129.github.io" target="_blank" rel="noopener noreferrer">
+              Personal Website
+            </a>
+          </div>
+        </footer>
       </article>
     </section>
   </main>
