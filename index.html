@@ -349,7 +349,7 @@
 
     .statusbar {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       margin-top: 14px;
       padding: 12px;
@@ -500,7 +500,7 @@
     }
 
     #vm-log {
-      min-height: 160px;
+      min-height: 180px;
       margin: 10px 0 0;
       padding: 12px;
       background: #050307;
@@ -715,7 +715,7 @@
       width: 30px;
       height: 30px;
       border: 1px solid var(--green);
-      box-shadow: inset 14px 0 0 transparent, 0 0 10px var(--green);
+      box-shadow: 0 0 10px var(--green);
     }
 
     .custom-cursor.crosshair::before,
@@ -788,7 +788,7 @@
   </style>
 </head>
 
-<body data-theme="amber">
+<body data-theme="amber" class="pixelated">
   <section class="boot-screen" aria-label="CoreEight loading screen">
     <div class="pixel-grid"></div>
     <div class="noise"></div>
@@ -838,8 +838,12 @@
         <span class="status-value" id="speed-value">700 Hz</span>
       </div>
       <div class="status-item">
-        <span class="status-label">Display</span>
-        <span class="status-value">64 x 32</span>
+        <span class="status-label">PC</span>
+        <span class="status-value" id="pc-status">0x200</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Opcode</span>
+        <span class="status-value" id="opcode-status">0x00E0</span>
       </div>
     </section>
 
@@ -861,10 +865,10 @@
             </p>
 
             <div class="transport">
-              <button class="control-button" type="button">Run</button>
-              <button class="control-button" type="button">Pause</button>
-              <button class="control-button" type="button">Step</button>
-              <button class="control-button" type="button">Reset</button>
+              <button class="control-button" type="button" id="run-vm">Run</button>
+              <button class="control-button" type="button" id="pause-vm">Pause</button>
+              <button class="control-button" type="button" id="step-vm">Step</button>
+              <button class="control-button" type="button" id="reset-vm-main">Reset</button>
             </div>
 
             <label class="speed-row">
@@ -1021,7 +1025,7 @@
 
           <label class="setting-row">
             <span>Pixelated Effect <small>Large block grid and hard panel edges.</small></span>
-            <input id="pixel-toggle" type="checkbox">
+            <input id="pixel-toggle" type="checkbox" checked>
           </label>
 
           <label class="setting-row">
@@ -1080,10 +1084,18 @@
     const debugGrid = document.querySelector("#debug-grid");
     const screenPreview = document.querySelector("#screen-preview");
     const vmResetButton = document.querySelector("#vm-reset");
+    const mainResetButton = document.querySelector("#reset-vm-main");
+    const stepButton = document.querySelector("#step-vm");
+    const runButton = document.querySelector("#run-vm");
+    const pauseButton = document.querySelector("#pause-vm");
     const vmLog = document.querySelector("#vm-log");
     const machineState = document.querySelector("#machine-state");
+    const pcStatus = document.querySelector("#pc-status");
+    const opcodeStatus = document.querySelector("#opcode-status");
 
     let progress = 0;
+    let runLoop = null;
+    let lastOpcode = 0x00E0;
 
     const loader = setInterval(() => {
       progress += 5;
@@ -1117,14 +1129,10 @@
     }
 
     navButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        showPanel(button.dataset.panel);
-      });
+      button.addEventListener("click", () => showPanel(button.dataset.panel));
     });
 
-    brandButton.addEventListener("click", () => {
-      showPanel("dashboard");
-    });
+    brandButton.addEventListener("click", () => showPanel("dashboard"));
 
     speedSlider.addEventListener("input", () => {
       speedValue.textContent = `${speedSlider.value} Hz`;
@@ -1150,6 +1158,7 @@
     const chip8 = {
       memory: new Uint8Array(4096),
       v: new Uint8Array(16),
+      display: new Uint8Array(64 * 32),
       i: 0,
       pc: 0x200,
       stack: [],
@@ -1158,9 +1167,29 @@
       running: false
     };
 
+    function hex(value, width) {
+      return value.toString(16).toUpperCase().padStart(width, "0");
+    }
+
+    function loadScratchProgram() {
+      const program = [
+        0x00, 0xE0,
+        0x60, 0x01,
+        0x61, 0x02,
+        0x70, 0x01,
+        0xA3, 0x00,
+        0x12, 0x00
+      ];
+
+      chip8.memory.set(program, 0x200);
+    }
+
     function resetVm() {
+      pauseVm();
+
       chip8.memory.fill(0);
       chip8.v.fill(0);
+      chip8.display.fill(0);
 
       chip8.i = 0;
       chip8.pc = 0x200;
@@ -1168,17 +1197,71 @@
       chip8.delayTimer = 0;
       chip8.soundTimer = 0;
       chip8.running = false;
+      lastOpcode = 0x00E0;
 
-      chip8.memory[0x200] = 0x00;
-      chip8.memory[0x201] = 0xE0;
+      loadScratchProgram();
+      seedDisplayPreview();
 
       machineState.textContent = "Paused";
       printVmState("VM reset");
-      syncDebugGrid();
+      syncEverything();
     }
 
-    function hex(value, width) {
-      return value.toString(16).toUpperCase().padStart(width, "0");
+    function fetchOpcode() {
+      return (chip8.memory[chip8.pc] << 8) | chip8.memory[chip8.pc + 1];
+    }
+
+    function stepVm() {
+      const opcode = fetchOpcode();
+      const x = (opcode & 0x0F00) >> 8;
+      const nn = opcode & 0x00FF;
+      const nnn = opcode & 0x0FFF;
+      const top = opcode & 0xF000;
+
+      lastOpcode = opcode;
+      chip8.pc += 2;
+
+      if (opcode === 0x00E0) {
+        chip8.display.fill(0);
+        printVmState(`Executed 0x${hex(opcode, 4)} CLS`);
+      } else if (top === 0x1000) {
+        chip8.pc = nnn;
+        printVmState(`Executed 0x${hex(opcode, 4)} JP 0x${hex(nnn, 3)}`);
+      } else if (top === 0x6000) {
+        chip8.v[x] = nn;
+        printVmState(`Executed 0x${hex(opcode, 4)} LD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
+      } else if (top === 0x7000) {
+        chip8.v[x] = (chip8.v[x] + nn) & 0xFF;
+        printVmState(`Executed 0x${hex(opcode, 4)} ADD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
+      } else if (top === 0xA000) {
+        chip8.i = nnn;
+        printVmState(`Executed 0x${hex(opcode, 4)} LD I, 0x${hex(nnn, 3)}`);
+      } else {
+        printVmState(`Fetched 0x${hex(opcode, 4)} but no handler exists yet`);
+      }
+
+      syncEverything();
+    }
+
+    function runVm() {
+      if (runLoop) return;
+
+      chip8.running = true;
+      machineState.textContent = "Running";
+
+      runLoop = setInterval(() => {
+        stepVm();
+      }, 250);
+    }
+
+    function pauseVm() {
+      if (runLoop) {
+        clearInterval(runLoop);
+        runLoop = null;
+      }
+
+      chip8.running = false;
+      machineState.textContent = "Paused";
     }
 
     function printVmState(label) {
@@ -1186,6 +1269,7 @@
         `${label}\n\n` +
         `PC: 0x${hex(chip8.pc, 3)}\n` +
         `I:  0x${hex(chip8.i, 3)}\n` +
+        `Opcode: 0x${hex(lastOpcode, 4)}\n` +
         `DT: ${chip8.delayTimer}\n` +
         `ST: ${chip8.soundTimer}\n` +
         `Stack depth: ${chip8.stack.length}\n\n` +
@@ -1197,35 +1281,60 @@
           .join("\n");
     }
 
-    vmResetButton.addEventListener("click", resetVm);
+    function syncEverything() {
+      pcStatus.textContent = `0x${hex(chip8.pc, 3)}`;
+      opcodeStatus.textContent = `0x${hex(lastOpcode, 4)}`;
+      syncDebugGrid();
+      syncMemoryGrid();
+      syncScreen();
+    }
 
     function buildScreenPreview() {
-      const onPixels = [17, 18, 19, 20, 33, 49, 65, 81, 82, 83, 84, 36, 52, 68, 37, 38, 53, 69];
-
       for (let index = 0; index < 128; index += 1) {
         const pixel = document.createElement("i");
         pixel.className = "screen-pixel";
-
-        if (onPixels.includes(index)) {
-          pixel.classList.add("on");
-        }
-
         screenPreview.appendChild(pixel);
       }
+    }
+
+    function seedDisplayPreview() {
+      chip8.display.fill(0);
+
+      const previewPixels = [17, 18, 19, 20, 33, 49, 65, 81, 82, 83, 84, 36, 52, 68, 37, 38, 53, 69];
+
+      previewPixels.forEach((index) => {
+        chip8.display[index] = 1;
+      });
+    }
+
+    function syncScreen() {
+      const pixels = screenPreview.querySelectorAll(".screen-pixel");
+
+      pixels.forEach((pixel, index) => {
+        pixel.classList.toggle("on", chip8.display[index] === 1);
+      });
     }
 
     function buildMemoryGrid() {
       for (let index = 0; index < 96; index += 1) {
         const cell = document.createElement("span");
         cell.className = "byte";
-        cell.textContent = hex(index, 2);
-
-        if (index === 16) cell.classList.add("pc");
-        if (index === 24 || index === 25) cell.classList.add("read");
-        if (index === 40) cell.classList.add("write");
-
         memoryGrid.appendChild(cell);
       }
+    }
+
+    function syncMemoryGrid() {
+      const cells = memoryGrid.querySelectorAll(".byte");
+
+      cells.forEach((cell, index) => {
+        const address = 0x200 + index;
+
+        cell.textContent = hex(chip8.memory[address], 2);
+        cell.className = "byte";
+
+        if (address === chip8.pc) cell.classList.add("pc");
+        if (address === chip8.pc - 2 || address === chip8.pc - 1) cell.classList.add("read");
+      });
     }
 
     function syncDebugGrid() {
@@ -1255,6 +1364,12 @@
         debugGrid.appendChild(register);
       });
     }
+
+    vmResetButton.addEventListener("click", resetVm);
+    mainResetButton.addEventListener("click", resetVm);
+    stepButton.addEventListener("click", stepVm);
+    runButton.addEventListener("click", runVm);
+    pauseButton.addEventListener("click", pauseVm);
 
     buildScreenPreview();
     buildMemoryGrid();
