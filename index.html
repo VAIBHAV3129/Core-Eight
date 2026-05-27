@@ -391,7 +391,7 @@
 
     .statusbar {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
       gap: 10px;
       margin-top: 14px;
       padding: 12px;
@@ -486,6 +486,33 @@
     .speed-row input {
       width: min(260px, 100%);
       accent-color: var(--red);
+    }
+
+    .timer-strip {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .timer-box {
+      border: 1px solid rgba(255, 224, 163, 0.18);
+      padding: 10px;
+      background: rgba(0,0,0,0.22);
+    }
+
+    .timer-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      text-transform: uppercase;
+    }
+
+    .timer-box strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--green);
+      font-size: 1.1rem;
     }
 
     .card-grid {
@@ -822,11 +849,11 @@
         justify-content: flex-start;
       }
 
-      .statusbar,
       .dashboard-layout,
       .card-grid,
       .settings-grid,
-      .game-grid {
+      .game-grid,
+      .timer-strip {
         grid-template-columns: 1fr;
       }
 
@@ -912,6 +939,14 @@
         <span class="status-label">Opcode</span>
         <span class="status-value" id="opcode-status">0x00E0</span>
       </div>
+      <div class="status-item">
+        <span class="status-label">Delay Timer</span>
+        <span class="status-value" id="dt-status">0</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Sound Timer</span>
+        <span class="status-value" id="st-status">0</span>
+      </div>
     </section>
 
     <section class="workspace">
@@ -942,6 +977,17 @@
               CPU Speed
               <input id="speed-slider" type="range" min="500" max="2000" value="700">
             </label>
+
+            <div class="timer-strip">
+              <div class="timer-box">
+                <span>Delay Timer</span>
+                <strong id="dt-panel">0</strong>
+              </div>
+              <div class="timer-box">
+                <span>Sound Timer</span>
+                <strong id="st-panel">0</strong>
+              </div>
+            </div>
 
             <div class="screen" id="screen-preview"></div>
 
@@ -1160,6 +1206,10 @@
     const machineState = document.querySelector("#machine-state");
     const pcStatus = document.querySelector("#pc-status");
     const opcodeStatus = document.querySelector("#opcode-status");
+    const delayStatus = document.querySelector("#dt-status");
+    const soundStatus = document.querySelector("#st-status");
+    const delayPanel = document.querySelector("#dt-panel");
+    const soundPanel = document.querySelector("#st-panel");
 
     let progress = 0;
     let runLoop = null;
@@ -1244,6 +1294,9 @@
         0x00, 0xE0,
         0x60, 0x01,
         0x61, 0x02,
+        0x62, 0x0A,
+        0xF2, 0x15,
+        0xF2, 0x18,
         0x70, 0x01,
         0xA3, 0x00,
         0x12, 0x00
@@ -1279,7 +1332,7 @@
       return (chip8.memory[chip8.pc] << 8) | chip8.memory[chip8.pc + 1];
     }
 
-    function stepVm() {
+    function stepVm(verbose = true) {
       const opcode = fetchOpcode();
       const x = (opcode & 0x0F00) >> 8;
       const nn = opcode & 0x00FF;
@@ -1291,24 +1344,35 @@
 
       if (opcode === 0x00E0) {
         chip8.display.fill(0);
-        printVmState(`Executed 0x${hex(opcode, 4)} CLS`);
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} CLS`);
       } else if (top === 0x1000) {
         chip8.pc = nnn;
-        printVmState(`Executed 0x${hex(opcode, 4)} JP 0x${hex(nnn, 3)}`);
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} JP 0x${hex(nnn, 3)}`);
       } else if (top === 0x6000) {
         chip8.v[x] = nn;
-        printVmState(`Executed 0x${hex(opcode, 4)} LD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
       } else if (top === 0x7000) {
         chip8.v[x] = (chip8.v[x] + nn) & 0xFF;
-        printVmState(`Executed 0x${hex(opcode, 4)} ADD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} ADD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
       } else if (top === 0xA000) {
         chip8.i = nnn;
-        printVmState(`Executed 0x${hex(opcode, 4)} LD I, 0x${hex(nnn, 3)}`);
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD I, 0x${hex(nnn, 3)}`);
+      } else if ((opcode & 0xF0FF) === 0xF015) {
+        chip8.delayTimer = chip8.v[x];
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD DT, V${x.toString(16).toUpperCase()}`);
+      } else if ((opcode & 0xF0FF) === 0xF018) {
+        chip8.soundTimer = chip8.v[x];
+        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD ST, V${x.toString(16).toUpperCase()}`);
       } else {
-        printVmState(`Fetched 0x${hex(opcode, 4)} but no handler exists yet`);
+        if (verbose) printVmState(`Fetched 0x${hex(opcode, 4)} but no handler exists yet`);
       }
 
       syncEverything();
+    }
+
+    function tickTimers() {
+      if (chip8.delayTimer > 0) chip8.delayTimer -= 1;
+      if (chip8.soundTimer > 0) chip8.soundTimer -= 1;
     }
 
     function runVm() {
@@ -1318,8 +1382,16 @@
       machineState.textContent = "Running";
 
       runLoop = setInterval(() => {
-        stepVm();
-      }, 250);
+        const cyclesPerFrame = Math.max(1, Math.floor(Number(speedSlider.value) / 60));
+
+        for (let i = 0; i < cyclesPerFrame; i += 1) {
+          stepVm(false);
+        }
+
+        tickTimers();
+        printVmState("Running");
+        syncEverything();
+      }, 1000 / 60);
     }
 
     function pauseVm() {
@@ -1352,6 +1424,11 @@
     function syncEverything() {
       pcStatus.textContent = `0x${hex(chip8.pc, 3)}`;
       opcodeStatus.textContent = `0x${hex(lastOpcode, 4)}`;
+      delayStatus.textContent = chip8.delayTimer;
+      soundStatus.textContent = chip8.soundTimer;
+      delayPanel.textContent = chip8.delayTimer;
+      soundPanel.textContent = chip8.soundTimer;
+
       syncDebugGrid();
       syncMemoryGrid();
       syncScreen();
@@ -1435,7 +1512,7 @@
 
     vmResetButton.addEventListener("click", resetVm);
     mainResetButton.addEventListener("click", resetVm);
-    stepButton.addEventListener("click", stepVm);
+    stepButton.addEventListener("click", () => stepVm(true));
     runButton.addEventListener("click", runVm);
     pauseButton.addEventListener("click", pauseVm);
 
