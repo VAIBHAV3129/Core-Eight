@@ -940,6 +940,10 @@
         <span class="status-value" id="opcode-status">0x00E0</span>
       </div>
       <div class="status-item">
+        <span class="status-label">Cycles</span>
+        <span class="status-value" id="cycle-status">0</span>
+      </div>
+      <div class="status-item">
         <span class="status-label">Delay Timer</span>
         <span class="status-value" id="dt-status">0</span>
       </div>
@@ -1206,6 +1210,7 @@
     const machineState = document.querySelector("#machine-state");
     const pcStatus = document.querySelector("#pc-status");
     const opcodeStatus = document.querySelector("#opcode-status");
+    const cycleStatus = document.querySelector("#cycle-status");
     const delayStatus = document.querySelector("#dt-status");
     const soundStatus = document.querySelector("#st-status");
     const delayPanel = document.querySelector("#dt-panel");
@@ -1282,6 +1287,7 @@
       stack: [],
       delayTimer: 0,
       soundTimer: 0,
+      cycles: 0,
       running: false
     };
 
@@ -1292,14 +1298,19 @@
     function loadScratchProgram() {
       const program = [
         0x00, 0xE0,
-        0x60, 0x01,
-        0x61, 0x02,
+        0x60, 0x05,
+        0x61, 0x03,
+        0x80, 0x14,
+        0x30, 0x08,
+        0x62, 0x01,
+        0x80, 0x10,
+        0x40, 0x10,
+        0x63, 0x01,
+        0xA3, 0x00,
         0x62, 0x0A,
         0xF2, 0x15,
         0xF2, 0x18,
-        0x70, 0x01,
-        0xA3, 0x00,
-        0x12, 0x00
+        0x12, 0x1A
       ];
 
       chip8.memory.set(program, 0x200);
@@ -1317,6 +1328,7 @@
       chip8.stack = [];
       chip8.delayTimer = 0;
       chip8.soundTimer = 0;
+      chip8.cycles = 0;
       chip8.running = false;
       lastOpcode = 0x00E0;
 
@@ -1335,39 +1347,88 @@
     function stepVm(verbose = true) {
       const opcode = fetchOpcode();
       const x = (opcode & 0x0F00) >> 8;
+      const y = (opcode & 0x00F0) >> 4;
+      const n = opcode & 0x000F;
       const nn = opcode & 0x00FF;
       const nnn = opcode & 0x0FFF;
       const top = opcode & 0xF000;
 
       lastOpcode = opcode;
       chip8.pc += 2;
+      chip8.cycles += 1;
 
       if (opcode === 0x00E0) {
         chip8.display.fill(0);
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} CLS`);
       } else if (top === 0x1000) {
         chip8.pc = nnn;
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} JP 0x${hex(nnn, 3)}`);
+      } else if (top === 0x3000) {
+        if (chip8.v[x] === nn) chip8.pc += 2;
+      } else if (top === 0x4000) {
+        if (chip8.v[x] !== nn) chip8.pc += 2;
+      } else if ((opcode & 0xF00F) === 0x5000) {
+        if (chip8.v[x] === chip8.v[y]) chip8.pc += 2;
       } else if (top === 0x6000) {
         chip8.v[x] = nn;
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
       } else if (top === 0x7000) {
         chip8.v[x] = (chip8.v[x] + nn) & 0xFF;
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} ADD V${x.toString(16).toUpperCase()}, 0x${hex(nn, 2)}`);
+      } else if (top === 0x8000) {
+        runRegisterOpcode(x, y, n);
       } else if (top === 0xA000) {
         chip8.i = nnn;
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD I, 0x${hex(nnn, 3)}`);
       } else if ((opcode & 0xF0FF) === 0xF015) {
         chip8.delayTimer = chip8.v[x];
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD DT, V${x.toString(16).toUpperCase()}`);
       } else if ((opcode & 0xF0FF) === 0xF018) {
         chip8.soundTimer = chip8.v[x];
-        if (verbose) printVmState(`Executed 0x${hex(opcode, 4)} LD ST, V${x.toString(16).toUpperCase()}`);
-      } else {
-        if (verbose) printVmState(`Fetched 0x${hex(opcode, 4)} but no handler exists yet`);
+      }
+
+      if (verbose) {
+        printVmState(`Executed 0x${hex(opcode, 4)} ${describeOpcode(opcode)}`);
       }
 
       syncEverything();
+    }
+
+    function runRegisterOpcode(x, y, mode) {
+      if (mode === 0x0) {
+        chip8.v[x] = chip8.v[y];
+      } else if (mode === 0x1) {
+        chip8.v[x] = chip8.v[x] | chip8.v[y];
+      } else if (mode === 0x2) {
+        chip8.v[x] = chip8.v[x] & chip8.v[y];
+      } else if (mode === 0x3) {
+        chip8.v[x] = chip8.v[x] ^ chip8.v[y];
+      } else if (mode === 0x4) {
+        const sum = chip8.v[x] + chip8.v[y];
+        chip8.v[0xF] = sum > 0xFF ? 1 : 0;
+        chip8.v[x] = sum & 0xFF;
+      }
+    }
+
+    function describeOpcode(opcode) {
+      const x = (opcode & 0x0F00) >> 8;
+      const y = (opcode & 0x00F0) >> 4;
+      const n = opcode & 0x000F;
+      const nn = opcode & 0x00FF;
+      const nnn = opcode & 0x0FFF;
+      const top = opcode & 0xF000;
+
+      if (opcode === 0x00E0) return "CLS";
+      if (top === 0x1000) return `JP 0x${hex(nnn, 3)}`;
+      if (top === 0x3000) return `SE V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+      if (top === 0x4000) return `SNE V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+      if ((opcode & 0xF00F) === 0x5000) return `SE V${hex(x, 1)}, V${hex(y, 1)}`;
+      if (top === 0x6000) return `LD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+      if (top === 0x7000) return `ADD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+      if (top === 0x8000 && n === 0x0) return `LD V${hex(x, 1)}, V${hex(y, 1)}`;
+      if (top === 0x8000 && n === 0x1) return `OR V${hex(x, 1)}, V${hex(y, 1)}`;
+      if (top === 0x8000 && n === 0x2) return `AND V${hex(x, 1)}, V${hex(y, 1)}`;
+      if (top === 0x8000 && n === 0x3) return `XOR V${hex(x, 1)}, V${hex(y, 1)}`;
+      if (top === 0x8000 && n === 0x4) return `ADD V${hex(x, 1)}, V${hex(y, 1)}`;
+      if (top === 0xA000) return `LD I, 0x${hex(nnn, 3)}`;
+      if ((opcode & 0xF0FF) === 0xF015) return `LD DT, V${hex(x, 1)}`;
+      if ((opcode & 0xF0FF) === 0xF018) return `LD ST, V${hex(x, 1)}`;
+
+      return "UNKNOWN";
     }
 
     function tickTimers() {
@@ -1410,11 +1471,11 @@
         `PC: 0x${hex(chip8.pc, 3)}\n` +
         `I:  0x${hex(chip8.i, 3)}\n` +
         `Opcode: 0x${hex(lastOpcode, 4)}\n` +
+        `Decoded: ${describeOpcode(lastOpcode)}\n` +
+        `Cycles: ${chip8.cycles}\n` +
         `DT: ${chip8.delayTimer}\n` +
         `ST: ${chip8.soundTimer}\n` +
         `Stack depth: ${chip8.stack.length}\n\n` +
-        `Memory[0x200]: 0x${hex(chip8.memory[0x200], 2)}\n` +
-        `Memory[0x201]: 0x${hex(chip8.memory[0x201], 2)}\n\n` +
         `V registers:\n` +
         Array.from(chip8.v)
           .map((value, index) => `V${index.toString(16).toUpperCase()}: ${value}`)
@@ -1424,6 +1485,7 @@
     function syncEverything() {
       pcStatus.textContent = `0x${hex(chip8.pc, 3)}`;
       opcodeStatus.textContent = `0x${hex(lastOpcode, 4)}`;
+      cycleStatus.textContent = chip8.cycles;
       delayStatus.textContent = chip8.delayTimer;
       soundStatus.textContent = chip8.soundTimer;
       delayPanel.textContent = chip8.delayTimer;
@@ -1499,7 +1561,8 @@
         ["PC", `0x${hex(chip8.pc, 3)}`],
         ["SP", chip8.stack.length],
         ["DT", chip8.delayTimer],
-        ["ST", chip8.soundTimer]
+        ["ST", chip8.soundTimer],
+        ["CY", chip8.cycles]
       ];
 
       system.forEach((item) => {
