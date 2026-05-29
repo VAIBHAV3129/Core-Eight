@@ -541,12 +541,13 @@
 
     .screen {
       display: grid;
-      grid-template-columns: repeat(16, 1fr);
-      gap: 4px;
-      width: min(520px, 100%);
+      grid-template-columns: repeat(64, 1fr);
+      grid-template-rows: repeat(32, 1fr);
+      gap: 1px;
+      width: min(720px, 100%);
       aspect-ratio: 2 / 1;
       margin-top: 16px;
-      padding: 14px;
+      padding: 10px;
       border: 12px solid var(--panel2);
       border-radius: 14px;
       background: #010302;
@@ -554,12 +555,14 @@
     }
 
     .screen-pixel {
-      background: rgba(109, 255, 186, 0.08);
+      min-width: 0;
+      min-height: 0;
+      background: rgba(109, 255, 186, 0.07);
     }
 
     .screen-pixel.on {
       background: var(--green);
-      box-shadow: 0 0 10px var(--green);
+      box-shadow: 0 0 8px var(--green);
     }
 
     .vm-debug {
@@ -1028,21 +1031,24 @@
         <p>The editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.</p>
 
         <div class="editor-shell">
-          <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8</div>
+          <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</div>
           <pre class="code-area"><span class="label">START:</span>
   <span class="op">CLS</span>
   <span class="op">LD</span> <span class="reg">V0</span>, <span class="num">0x08</span>
-  <span class="op">LD</span> <span class="reg">V1</span>, <span class="num">0x10</span>
+  <span class="op">LD</span> <span class="reg">V1</span>, <span class="num">0x06</span>
   <span class="op">LD</span> I, SPRITE_CORE
   <span class="op">DRW</span> <span class="reg">V0</span>, <span class="reg">V1</span>, <span class="num">0x5</span>
-  <span class="op">JP</span> START</pre>
+  <span class="op">LD</span> <span class="reg">V2</span>, <span class="num">0x0A</span>
+  <span class="op">LD</span> DT, <span class="reg">V2</span>
+  <span class="op">LD</span> ST, <span class="reg">V2</span></pre>
         </div>
 
         <div class="terminal">
           CORE ASM READY<br>
-          0000: CLS<br>
-          0002: LD V0, 0x08<br>
-          0004: LD V1, 0x10
+          0200: 00E0 CLS<br>
+          0202: 6008 LD V0, 0x08<br>
+          0204: 6106 LD V1, 0x06<br>
+          0208: D015 DRW V0, V1, 5
         </div>
       </article>
 
@@ -1298,22 +1304,22 @@
     function loadScratchProgram() {
       const program = [
         0x00, 0xE0,
-        0x60, 0x05,
-        0x61, 0x03,
-        0x80, 0x14,
-        0x30, 0x08,
-        0x62, 0x01,
-        0x80, 0x10,
-        0x40, 0x10,
-        0x63, 0x01,
+        0x60, 0x08,
+        0x61, 0x06,
         0xA3, 0x00,
+        0xD0, 0x15,
         0x62, 0x0A,
         0xF2, 0x15,
         0xF2, 0x18,
-        0x12, 0x1A
+        0x70, 0x01,
+        0xD0, 0x15,
+        0x12, 0x10
       ];
 
+      const sprite = [0xF0, 0x90, 0xF0, 0x90, 0x90];
+
       chip8.memory.set(program, 0x200);
+      chip8.memory.set(sprite, 0x300);
     }
 
     function resetVm() {
@@ -1333,7 +1339,6 @@
       lastOpcode = 0x00E0;
 
       loadScratchProgram();
-      seedDisplayPreview();
 
       machineState.textContent = "Paused";
       printVmState("VM reset");
@@ -1375,6 +1380,8 @@
         runRegisterOpcode(x, y, n);
       } else if (top === 0xA000) {
         chip8.i = nnn;
+      } else if (top === 0xD000) {
+        drawSprite(x, y, n);
       } else if ((opcode & 0xF0FF) === 0xF015) {
         chip8.delayTimer = chip8.v[x];
       } else if ((opcode & 0xF0FF) === 0xF018) {
@@ -1404,6 +1411,34 @@
       }
     }
 
+    function drawSprite(xReg, yReg, height) {
+      const startX = chip8.v[xReg] % 64;
+      const startY = chip8.v[yReg] % 32;
+      let collision = 0;
+
+      for (let row = 0; row < height; row += 1) {
+        const spriteByte = chip8.memory[chip8.i + row];
+
+        for (let bit = 0; bit < 8; bit += 1) {
+          const spritePixel = spriteByte & (0x80 >> bit);
+
+          if (spritePixel) {
+            const x = (startX + bit) % 64;
+            const y = (startY + row) % 32;
+            const index = y * 64 + x;
+
+            if (chip8.display[index] === 1) {
+              collision = 1;
+            }
+
+            chip8.display[index] = chip8.display[index] ^ 1;
+          }
+        }
+      }
+
+      chip8.v[0xF] = collision;
+    }
+
     function describeOpcode(opcode) {
       const x = (opcode & 0x0F00) >> 8;
       const y = (opcode & 0x00F0) >> 4;
@@ -1425,6 +1460,7 @@
       if (top === 0x8000 && n === 0x3) return `XOR V${hex(x, 1)}, V${hex(y, 1)}`;
       if (top === 0x8000 && n === 0x4) return `ADD V${hex(x, 1)}, V${hex(y, 1)}`;
       if (top === 0xA000) return `LD I, 0x${hex(nnn, 3)}`;
+      if (top === 0xD000) return `DRW V${hex(x, 1)}, V${hex(y, 1)}, ${n}`;
       if ((opcode & 0xF0FF) === 0xF015) return `LD DT, V${hex(x, 1)}`;
       if ((opcode & 0xF0FF) === 0xF018) return `LD ST, V${hex(x, 1)}`;
 
@@ -1497,21 +1533,11 @@
     }
 
     function buildScreenPreview() {
-      for (let index = 0; index < 128; index += 1) {
+      for (let index = 0; index < 64 * 32; index += 1) {
         const pixel = document.createElement("i");
         pixel.className = "screen-pixel";
         screenPreview.appendChild(pixel);
       }
-    }
-
-    function seedDisplayPreview() {
-      chip8.display.fill(0);
-
-      const previewPixels = [17, 18, 19, 20, 33, 49, 65, 81, 82, 83, 84, 36, 52, 68, 37, 38, 53, 69];
-
-      previewPixels.forEach((index) => {
-        chip8.display[index] = 1;
-      });
     }
 
     function syncScreen() {
