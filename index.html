@@ -162,9 +162,6 @@
     .boot-screen::after {
       inset: 30px;
       border: 1px solid rgba(255, 224, 163, 0.58);
-      box-shadow:
-        0 0 14px rgba(255, 224, 163, 0.22),
-        inset 0 0 14px rgba(255, 224, 163, 0.12);
     }
 
     body.ready .boot-screen {
@@ -212,8 +209,7 @@
         0 8px 0 #25040a,
         5px 0 0 rgba(255, 42, 22, 0.8),
         -5px 0 0 rgba(255, 106, 78, 0.45),
-        0 0 30px rgba(255, 42, 22, 0.72),
-        0 0 70px rgba(255, 42, 22, 0.36);
+        0 0 30px rgba(255, 42, 22, 0.72);
     }
 
     .boot-copy {
@@ -515,10 +511,21 @@
       font-size: 1.1rem;
     }
 
-    .card-grid {
+    .card-grid,
+    .game-grid,
+    .settings-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
       gap: 10px;
+      margin-top: 18px;
+    }
+
+    .card-grid,
+    .settings-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .game-grid {
+      grid-template-columns: repeat(5, 1fr);
     }
 
     .card {
@@ -691,11 +698,24 @@
       font-size: 1.05rem;
     }
 
-    .game-grid {
+    .keypad-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-top: 18px;
+      grid-template-columns: repeat(4, 52px);
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .keypad-grid button {
+      min-height: 42px;
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    .keypad-grid button.down {
+      color: #fff;
+      border-color: var(--green);
+      box-shadow: 0 0 14px rgba(109, 255, 186, 0.45);
     }
 
     .game-art {
@@ -725,13 +745,6 @@
 
     .timeline-item strong {
       color: var(--green);
-    }
-
-    .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-top: 18px;
     }
 
     .setting-row {
@@ -884,7 +897,7 @@
 </head>
 
 <body data-theme="amber" class="pixelated">
-  <section class="boot-screen" aria-label="CoreEight loading screen">
+  <section class="boot-screen">
     <div class="pixel-grid"></div>
     <div class="noise"></div>
 
@@ -910,7 +923,7 @@
 
       <div class="credit-box">MADE BY L K VAIBHAV</div>
 
-      <nav class="nav" aria-label="Main navigation">
+      <nav class="nav">
         <button class="active" type="button" data-panel="dashboard">Dashboard</button>
         <button type="button" data-panel="ide">IDE</button>
         <button type="button" data-panel="memory">Memory</button>
@@ -921,40 +934,7 @@
       </nav>
     </header>
 
-    <section class="statusbar">
-      <div class="status-item">
-        <span class="status-label">Machine State</span>
-        <span class="status-value" id="machine-state">Paused</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Loaded ROM</span>
-        <span class="status-value">Scratch ROM</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">CPU Clock</span>
-        <span class="status-value" id="speed-value">700 Hz</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">PC</span>
-        <span class="status-value" id="pc-status">0x200</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Opcode</span>
-        <span class="status-value" id="opcode-status">0x00E0</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Cycles</span>
-        <span class="status-value" id="cycle-status">0</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Delay Timer</span>
-        <span class="status-value" id="dt-status">0</span>
-      </div>
-      <div class="status-item">
-        <span class="status-label">Sound Timer</span>
-        <span class="status-value" id="st-status">0</span>
-      </div>
-    </section>
+    <section class="statusbar" id="statusbar"></section>
 
     <section class="workspace">
       <article class="panel active" id="dashboard">
@@ -969,7 +949,7 @@
           <section class="work-surface">
             <h2>Development Core</h2>
             <p>
-              Load ROMs, run code, step through opcodes, inspect memory, edit registers,
+              Run code, step through opcodes, inspect memory, edit registers,
               and switch into the arcade workspace from the same machine state.
             </p>
 
@@ -1005,24 +985,7 @@
             </section>
           </section>
 
-          <section class="card-grid">
-            <div class="card">
-              <strong>Assembler</strong>
-              <span>Native Chip-8 assembly with labels, constants, diagnostics, and ROM export.</span>
-            </div>
-            <div class="card">
-              <strong>Debugger</strong>
-              <span>Register editing, opcode stepping, stack tracing, timers, and breakpoints.</span>
-            </div>
-            <div class="card">
-              <strong>Memory</strong>
-              <span>4KB visual map with PC, read, write, search, and byte inspection tools.</span>
-            </div>
-            <div class="card">
-              <strong>Arcade</strong>
-              <span>BRIX, PONG, SPACE INVADERS, MAZE RUNNER, and TETRIS in cabinet mode.</span>
-            </div>
-          </section>
+          <section class="card-grid" id="feature-cards"></section>
         </div>
       </article>
 
@@ -1043,18 +1006,17 @@
   <span class="op">LD</span> ST, <span class="reg">V2</span></pre>
         </div>
 
-        <div class="terminal">
-          CORE ASM READY<br>
+        <div class="terminal" id="asm-terminal">
+          Assembler ready<br>
           0200: 00E0 CLS<br>
           0202: 6008 LD V0, 0x08<br>
-          0204: 6106 LD V1, 0x06<br>
           0208: D015 DRW V0, V1, 5
         </div>
       </article>
 
       <article class="panel" id="memory">
         <h2>Live Memory Visualizer</h2>
-        <p>Memory bytes use separate visual states for the program counter, reads, and writes.</p>
+        <p>Memory bytes use separate visual states for the program counter and recent fetch reads.</p>
         <div class="memory-grid" id="memory-grid"></div>
       </article>
 
@@ -1062,39 +1024,16 @@
         <h2>Interactive Register Debugger</h2>
         <p>Registers V0 through VF share space with system values for I, PC, SP, delay timer, and sound timer.</p>
         <div class="debug-grid" id="debug-grid"></div>
+
+        <h2 style="margin-top:22px;">Keypad</h2>
+        <p>Keyboard map: 1 2 3 4 / Q W E R / A S D F / Z X C V.</p>
+        <div class="keypad-grid" id="keypad-grid"></div>
       </article>
 
       <article class="panel" id="arcade">
         <h2>Arcade</h2>
         <p>Five Chip-8 games exercise display rendering, keypad input, timers, collision, scoring, and audio.</p>
-
-        <div class="game-grid">
-          <section class="card">
-            <div class="game-art"></div>
-            <h3>BRIX</h3>
-            <p>Breakout-style paddle control, collision checks, and brick clearing.</p>
-          </section>
-          <section class="card">
-            <div class="game-art"></div>
-            <h3>PONG</h3>
-            <p>Classic paddle duel for input timing, scoring, and screen refresh.</p>
-          </section>
-          <section class="card">
-            <div class="game-art"></div>
-            <h3>SPACE INVADERS</h3>
-            <p>Alien shooter flow with sprites, movement, projectiles, and timers.</p>
-          </section>
-          <section class="card">
-            <div class="game-art"></div>
-            <h3>MAZE RUNNER</h3>
-            <p>Grid navigation for keypad movement, collision, and memory tracing.</p>
-          </section>
-          <section class="card">
-            <div class="game-art"></div>
-            <h3>TETRIS</h3>
-            <p>Falling block logic adapted for the Chip-8 display format.</p>
-          </section>
-        </div>
+        <div class="game-grid" id="game-grid"></div>
       </article>
 
       <article class="panel" id="info">
@@ -1124,65 +1063,14 @@
         <h2>Settings</h2>
         <p>Visual controls change the current workspace immediately.</p>
 
-        <div class="settings-grid">
-          <label class="setting-row">
-            <span>Theme <small>Global color profile.</small></span>
-            <select id="theme-select">
-              <option value="amber">Amber Cathode</option>
-              <option value="matrix">Matrix Terminal</option>
-              <option value="cyber">Cyber-Whacker</option>
-            </select>
-          </label>
-
-          <label class="setting-row">
-            <span>Pixelated Effect <small>Large block grid and hard panel edges.</small></span>
-            <input id="pixel-toggle" type="checkbox" checked>
-          </label>
-
-          <label class="setting-row">
-            <span>Cursor Type <small>Pointer style for the workspace.</small></span>
-            <select id="cursor-select">
-              <option value="hand">Retro Hand</option>
-              <option value="crosshair">Crosshair</option>
-              <option value="pixel">Pixel Pointer</option>
-              <option value="system">System Cursor</option>
-            </select>
-          </label>
-
-          <label class="setting-row">
-            <span>Editor Font <small>Assembly editor text size.</small></span>
-            <input id="editor-size" type="range" min="13" max="20" value="15">
-          </label>
-
-          <label class="setting-row">
-            <span>Memory Density <small>Byte grid spacing.</small></span>
-            <select>
-              <option>Comfortable</option>
-              <option>Compact</option>
-              <option>Cinematic</option>
-            </select>
-          </label>
-
-          <label class="setting-row">
-            <span>Register Format <small>Debugger value base.</small></span>
-            <select>
-              <option>Hexadecimal</option>
-              <option>Decimal</option>
-              <option>Binary</option>
-            </select>
-          </label>
-        </div>
+        <div class="settings-grid" id="settings-grid"></div>
 
         <footer class="settings-footer">
           <div class="credit-box">MADE BY L K VAIBHAV</div>
 
           <div class="source-links">
-            <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank" rel="noopener noreferrer">
-              Source Code
-            </a>
-            <a href="https://vaibhav3129.github.io" target="_blank" rel="noopener noreferrer">
-              Personal Website
-            </a>
+            <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank" rel="noopener noreferrer">Source Code</a>
+            <a href="https://vaibhav3129.github.io" target="_blank" rel="noopener noreferrer">Personal Website</a>
           </div>
         </footer>
       </article>
@@ -1191,111 +1079,301 @@
 
   <div class="custom-cursor hand" id="custom-cursor"></div>
 
+  <template id="card-template">
+    <section class="card">
+      <div class="game-art"></div>
+      <strong></strong>
+      <span></span>
+    </section>
+  </template>
+
+  <template id="setting-template">
+    <label class="setting-row">
+      <span></span>
+      <select></select>
+    </label>
+  </template>
+
   <script>
-    const root = document.documentElement;
-    const loadNumber = document.querySelector(".load-number");
-    const cursor = document.querySelector("#custom-cursor");
-    const navButtons = document.querySelectorAll(".nav button");
-    const panels = document.querySelectorAll(".panel");
-    const brandButton = document.querySelector(".brand");
-    const speedSlider = document.querySelector("#speed-slider");
-    const speedValue = document.querySelector("#speed-value");
-    const themeSelect = document.querySelector("#theme-select");
-    const pixelToggle = document.querySelector("#pixel-toggle");
-    const editorSize = document.querySelector("#editor-size");
-    const cursorSelect = document.querySelector("#cursor-select");
-    const memoryGrid = document.querySelector("#memory-grid");
-    const debugGrid = document.querySelector("#debug-grid");
-    const screenPreview = document.querySelector("#screen-preview");
-    const vmResetButton = document.querySelector("#vm-reset");
-    const mainResetButton = document.querySelector("#reset-vm-main");
-    const stepButton = document.querySelector("#step-vm");
-    const runButton = document.querySelector("#run-vm");
-    const pauseButton = document.querySelector("#pause-vm");
-    const vmLog = document.querySelector("#vm-log");
-    const machineState = document.querySelector("#machine-state");
-    const pcStatus = document.querySelector("#pc-status");
-    const opcodeStatus = document.querySelector("#opcode-status");
-    const cycleStatus = document.querySelector("#cycle-status");
-    const delayStatus = document.querySelector("#dt-status");
-    const soundStatus = document.querySelector("#st-status");
-    const delayPanel = document.querySelector("#dt-panel");
-    const soundPanel = document.querySelector("#st-panel");
+    const ui = {
+      root: document.documentElement,
+      body: document.body,
+      loadNumber: document.querySelector(".load-number"),
+      cursor: document.querySelector("#custom-cursor"),
+      navButtons: document.querySelectorAll(".nav button"),
+      panels: document.querySelectorAll(".panel"),
+      brandButton: document.querySelector(".brand"),
+      statusbar: document.querySelector("#statusbar"),
+      featureCards: document.querySelector("#feature-cards"),
+      gameGrid: document.querySelector("#game-grid"),
+      settingsGrid: document.querySelector("#settings-grid"),
+      speedSlider: document.querySelector("#speed-slider"),
+      screen: document.querySelector("#screen-preview"),
+      memoryGrid: document.querySelector("#memory-grid"),
+      debugGrid: document.querySelector("#debug-grid"),
+      keypadGrid: document.querySelector("#keypad-grid"),
+      vmLog: document.querySelector("#vm-log"),
+      timerPanels: {
+        delay: document.querySelector("#dt-panel"),
+        sound: document.querySelector("#st-panel")
+      },
+      buttons: {
+        run: document.querySelector("#run-vm"),
+        pause: document.querySelector("#pause-vm"),
+        step: document.querySelector("#step-vm"),
+        reset: document.querySelector("#reset-vm-main"),
+        resetScratch: document.querySelector("#vm-reset")
+      }
+    };
 
-    let progress = 0;
-    let runLoop = null;
-    let lastOpcode = 0x00E0;
+    const keyMap = {
+      "1": 0x1, "2": 0x2, "3": 0x3, "4": 0xC,
+      q: 0x4, w: 0x5, e: 0x6, r: 0xD,
+      a: 0x7, s: 0x8, d: 0x9, f: 0xE,
+      z: 0xA, x: 0x0, c: 0xB, v: 0xF
+    };
 
-    const loader = setInterval(() => {
-      progress += 5;
+    const keypadLabels = ["1", "2", "3", "C", "4", "5", "6", "D", "7", "8", "9", "E", "A", "0", "B", "F"];
 
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(loader);
-
-        setTimeout(() => {
-          document.body.classList.add("ready");
-        }, 250);
+    class Chip8 {
+      constructor() {
+        this.memory = new Uint8Array(4096);
+        this.v = new Uint8Array(16);
+        this.display = new Uint8Array(64 * 32);
+        this.keys = new Uint8Array(16);
+        this.stack = [];
+        this.waitingForKey = null;
+        this.quirks = { shiftUsesVy: false, incrementI: true };
+        this.reset();
       }
 
-      root.style.setProperty("--load", `${progress}%`);
-      loadNumber.textContent = `${progress}%`;
-    }, 100);
+      reset() {
+        this.memory.fill(0);
+        this.v.fill(0);
+        this.display.fill(0);
+        this.keys.fill(0);
+        this.stack = [];
+        this.i = 0;
+        this.pc = 0x200;
+        this.delayTimer = 0;
+        this.soundTimer = 0;
+        this.cycles = 0;
+        this.lastOpcode = 0;
+        this.waitingForKey = null;
+        this.loadFont();
+      }
 
-    window.addEventListener("pointermove", (event) => {
-      cursor.style.transform = `translate(${event.clientX - 3}px, ${event.clientY - 3}px)`;
-    });
+      loadFont() {
+        const font = [
+          0xF0,0x90,0x90,0x90,0xF0, 0x20,0x60,0x20,0x20,0x70,
+          0xF0,0x10,0xF0,0x80,0xF0, 0xF0,0x10,0xF0,0x10,0xF0,
+          0x90,0x90,0xF0,0x10,0x10, 0xF0,0x80,0xF0,0x10,0xF0,
+          0xF0,0x80,0xF0,0x90,0xF0, 0xF0,0x10,0x20,0x40,0x40,
+          0xF0,0x90,0xF0,0x90,0xF0, 0xF0,0x90,0xF0,0x10,0xF0,
+          0xF0,0x90,0xF0,0x90,0x90, 0xE0,0x90,0xE0,0x90,0xE0,
+          0xF0,0x80,0x80,0x80,0xF0, 0xE0,0x90,0x90,0x90,0xE0,
+          0xF0,0x80,0xF0,0x80,0xF0, 0xF0,0x80,0xF0,0x80,0x80
+        ];
+        this.memory.set(font, 0x50);
+      }
 
-    function showPanel(panelId) {
-      navButtons.forEach((item) => item.classList.remove("active"));
-      panels.forEach((panel) => panel.classList.remove("active"));
+      loadProgram(bytes, start = 0x200) {
+        this.memory.set(bytes, start);
+        this.pc = start;
+      }
 
-      const button = document.querySelector(`.nav button[data-panel="${panelId}"]`);
-      if (button) button.classList.add("active");
+      fetch() {
+        return (this.memory[this.pc] << 8) | this.memory[this.pc + 1];
+      }
 
-      document.getElementById(panelId).classList.add("active");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      cycle() {
+        if (this.waitingForKey !== null) return "waiting";
+
+        const opcode = this.fetch();
+        this.lastOpcode = opcode;
+        this.pc = (this.pc + 2) & 0xFFF;
+        this.cycles += 1;
+        this.execute(opcode);
+        return this.describe(opcode);
+      }
+
+      execute(opcode) {
+        const x = (opcode & 0x0F00) >> 8;
+        const y = (opcode & 0x00F0) >> 4;
+        const n = opcode & 0x000F;
+        const nn = opcode & 0x00FF;
+        const nnn = opcode & 0x0FFF;
+
+        if (opcode === 0x00E0) {
+          this.display.fill(0);
+        } else if (opcode === 0x00EE) {
+          this.pc = this.stack.pop() ?? 0x200;
+        } else if ((opcode & 0xF000) === 0x1000) {
+          this.pc = nnn;
+        } else if ((opcode & 0xF000) === 0x2000) {
+          this.stack.push(this.pc);
+          this.pc = nnn;
+        } else if ((opcode & 0xF000) === 0x3000) {
+          if (this.v[x] === nn) this.pc += 2;
+        } else if ((opcode & 0xF000) === 0x4000) {
+          if (this.v[x] !== nn) this.pc += 2;
+        } else if ((opcode & 0xF00F) === 0x5000) {
+          if (this.v[x] === this.v[y]) this.pc += 2;
+        } else if ((opcode & 0xF000) === 0x6000) {
+          this.v[x] = nn;
+        } else if ((opcode & 0xF000) === 0x7000) {
+          this.v[x] = (this.v[x] + nn) & 0xFF;
+        } else if ((opcode & 0xF000) === 0x8000) {
+          this.alu(x, y, n);
+        } else if ((opcode & 0xF00F) === 0x9000) {
+          if (this.v[x] !== this.v[y]) this.pc += 2;
+        } else if ((opcode & 0xF000) === 0xA000) {
+          this.i = nnn;
+        } else if ((opcode & 0xF000) === 0xB000) {
+          this.pc = (nnn + this.v[0]) & 0xFFF;
+        } else if ((opcode & 0xF000) === 0xC000) {
+          this.v[x] = Math.floor(Math.random() * 256) & nn;
+        } else if ((opcode & 0xF000) === 0xD000) {
+          this.draw(x, y, n);
+        } else if ((opcode & 0xF0FF) === 0xE09E) {
+          if (this.keys[this.v[x] & 0xF]) this.pc += 2;
+        } else if ((opcode & 0xF0FF) === 0xE0A1) {
+          if (!this.keys[this.v[x] & 0xF]) this.pc += 2;
+        } else if ((opcode & 0xF0FF) === 0xF007) {
+          this.v[x] = this.delayTimer;
+        } else if ((opcode & 0xF0FF) === 0xF00A) {
+          this.waitingForKey = x;
+        } else if ((opcode & 0xF0FF) === 0xF015) {
+          this.delayTimer = this.v[x];
+        } else if ((opcode & 0xF0FF) === 0xF018) {
+          this.soundTimer = this.v[x];
+        } else if ((opcode & 0xF0FF) === 0xF01E) {
+          this.i = (this.i + this.v[x]) & 0xFFF;
+        } else if ((opcode & 0xF0FF) === 0xF029) {
+          this.i = 0x50 + (this.v[x] & 0xF) * 5;
+        } else if ((opcode & 0xF0FF) === 0xF033) {
+          const value = this.v[x];
+          this.memory[this.i] = Math.floor(value / 100);
+          this.memory[this.i + 1] = Math.floor((value % 100) / 10);
+          this.memory[this.i + 2] = value % 10;
+        } else if ((opcode & 0xF0FF) === 0xF055) {
+          for (let idx = 0; idx <= x; idx += 1) this.memory[this.i + idx] = this.v[idx];
+          if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFF;
+        } else if ((opcode & 0xF0FF) === 0xF065) {
+          for (let idx = 0; idx <= x; idx += 1) this.v[idx] = this.memory[this.i + idx];
+          if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFF;
+        } else {
+          throw new Error(`Unknown opcode: 0x${hex(opcode, 4)}`);
+        }
+      }
+
+      alu(x, y, mode) {
+        if (mode === 0x0) this.v[x] = this.v[y];
+        else if (mode === 0x1) this.v[x] |= this.v[y];
+        else if (mode === 0x2) this.v[x] &= this.v[y];
+        else if (mode === 0x3) this.v[x] ^= this.v[y];
+        else if (mode === 0x4) {
+          const sum = this.v[x] + this.v[y];
+          this.v[0xF] = sum > 0xFF ? 1 : 0;
+          this.v[x] = sum & 0xFF;
+        } else if (mode === 0x5) {
+          this.v[0xF] = this.v[x] >= this.v[y] ? 1 : 0;
+          this.v[x] = (this.v[x] - this.v[y]) & 0xFF;
+        } else if (mode === 0x6) {
+          if (this.quirks.shiftUsesVy) this.v[x] = this.v[y];
+          this.v[0xF] = this.v[x] & 1;
+          this.v[x] >>= 1;
+        } else if (mode === 0x7) {
+          this.v[0xF] = this.v[y] >= this.v[x] ? 1 : 0;
+          this.v[x] = (this.v[y] - this.v[x]) & 0xFF;
+        } else if (mode === 0xE) {
+          if (this.quirks.shiftUsesVy) this.v[x] = this.v[y];
+          this.v[0xF] = (this.v[x] & 0x80) ? 1 : 0;
+          this.v[x] = (this.v[x] << 1) & 0xFF;
+        } else {
+          throw new Error(`Unknown opcode: 0x8${x.toString(16)}${y.toString(16)}${mode.toString(16)}`);
+        }
+      }
+
+      draw(xReg, yReg, height) {
+        const startX = this.v[xReg] % 64;
+        const startY = this.v[yReg] % 32;
+        this.v[0xF] = 0;
+
+        for (let row = 0; row < height; row += 1) {
+          const spriteByte = this.memory[this.i + row];
+
+          for (let bit = 0; bit < 8; bit += 1) {
+            if ((spriteByte & (0x80 >> bit)) === 0) continue;
+
+            const x = (startX + bit) % 64;
+            const y = (startY + row) % 32;
+            const index = y * 64 + x;
+
+            if (this.display[index]) this.v[0xF] = 1;
+            this.display[index] ^= 1;
+          }
+        }
+      }
+
+      setKey(key, pressed) {
+        this.keys[key] = pressed ? 1 : 0;
+
+        if (pressed && this.waitingForKey !== null) {
+          this.v[this.waitingForKey] = key;
+          this.waitingForKey = null;
+        }
+      }
+
+      tickTimers() {
+        if (this.delayTimer > 0) this.delayTimer -= 1;
+        if (this.soundTimer > 0) this.soundTimer -= 1;
+      }
+
+      describe(opcode = this.lastOpcode) {
+        const x = (opcode & 0x0F00) >> 8;
+        const y = (opcode & 0x00F0) >> 4;
+        const n = opcode & 0x000F;
+        const nn = opcode & 0x00FF;
+        const nnn = opcode & 0x0FFF;
+        const top = opcode & 0xF000;
+
+        if (opcode === 0x00E0) return "CLS";
+        if (opcode === 0x00EE) return "RET";
+        if (top === 0x1000) return `JP 0x${hex(nnn, 3)}`;
+        if (top === 0x2000) return `CALL 0x${hex(nnn, 3)}`;
+        if (top === 0x3000) return `SE V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+        if (top === 0x4000) return `SNE V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+        if ((opcode & 0xF00F) === 0x5000) return `SE V${hex(x, 1)}, V${hex(y, 1)}`;
+        if (top === 0x6000) return `LD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+        if (top === 0x7000) return `ADD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+        if (top === 0x8000) {
+          return ["LD", "OR", "AND", "XOR", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", "SHL"][n] + ` V${hex(x, 1)}, V${hex(y, 1)}`;
+        }
+        if ((opcode & 0xF00F) === 0x9000) return `SNE V${hex(x, 1)}, V${hex(y, 1)}`;
+        if (top === 0xA000) return `LD I, 0x${hex(nnn, 3)}`;
+        if (top === 0xB000) return `JP V0, 0x${hex(nnn, 3)}`;
+        if (top === 0xC000) return `RND V${hex(x, 1)}, 0x${hex(nn, 2)}`;
+        if (top === 0xD000) return `DRW V${hex(x, 1)}, V${hex(y, 1)}, ${n}`;
+        if ((opcode & 0xF0FF) === 0xE09E) return `SKP V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xE0A1) return `SKNP V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF007) return `LD V${hex(x, 1)}, DT`;
+        if ((opcode & 0xF0FF) === 0xF00A) return `LD V${hex(x, 1)}, K`;
+        if ((opcode & 0xF0FF) === 0xF015) return `LD DT, V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF018) return `LD ST, V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF01E) return `ADD I, V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF029) return `LD F, V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF033) return `LD B, V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF055) return `LD [I], V${hex(x, 1)}`;
+        if ((opcode & 0xF0FF) === 0xF065) return `LD V${hex(x, 1)}, [I]`;
+        return `0x${hex(opcode, 4)}`;
+      }
     }
 
-    navButtons.forEach((button) => {
-      button.addEventListener("click", () => showPanel(button.dataset.panel));
-    });
-
-    brandButton.addEventListener("click", () => showPanel("dashboard"));
-
-    speedSlider.addEventListener("input", () => {
-      speedValue.textContent = `${speedSlider.value} Hz`;
-    });
-
-    themeSelect.addEventListener("change", () => {
-      document.body.dataset.theme = themeSelect.value;
-    });
-
-    pixelToggle.addEventListener("change", () => {
-      document.body.classList.toggle("pixelated", pixelToggle.checked);
-    });
-
-    editorSize.addEventListener("input", () => {
-      root.style.setProperty("--editor-size", `${editorSize.value}px`);
-    });
-
-    cursorSelect.addEventListener("change", () => {
-      cursor.className = `custom-cursor ${cursorSelect.value}`;
-      document.body.classList.toggle("system-cursor", cursorSelect.value === "system");
-    });
-
-    const chip8 = {
-      memory: new Uint8Array(4096),
-      v: new Uint8Array(16),
-      display: new Uint8Array(64 * 32),
-      i: 0,
-      pc: 0x200,
-      stack: [],
-      delayTimer: 0,
-      soundTimer: 0,
-      cycles: 0,
-      running: false
-    };
+    const chip8 = new Chip8();
+    let progress = 0;
+    let runLoop = null;
+    let lastLine = "Resetting VM...";
 
     function hex(value, width) {
       return value.toString(16).toUpperCase().padStart(width, "0");
@@ -1318,296 +1396,317 @@
 
       const sprite = [0xF0, 0x90, 0xF0, 0x90, 0x90];
 
-      chip8.memory.set(program, 0x200);
+      chip8.loadProgram(program);
       chip8.memory.set(sprite, 0x300);
+    }
+
+    const data = {
+      features: [
+        ["Assembler", "Native Chip-8 assembly with labels, constants, diagnostics, and ROM export."],
+        ["Debugger", "Register editing, opcode stepping, stack tracing, timers, and breakpoints."],
+        ["Memory", "4KB visual map with PC, read, search, and byte inspection tools."],
+        ["Arcade", "BRIX, PONG, SPACE INVADERS, MAZE RUNNER, and TETRIS in cabinet mode."]
+      ],
+      games: [
+        ["BRIX", "Breakout-style paddle control, collision checks, and brick clearing."],
+        ["PONG", "Classic paddle duel for input timing, scoring, and screen refresh."],
+        ["SPACE INVADERS", "Alien shooter flow with sprites, movement, projectiles, and timers."],
+        ["MAZE RUNNER", "Grid navigation for keypad movement, collision, and memory tracing."],
+        ["TETRIS", "Falling block logic adapted for the Chip-8 display format."]
+      ],
+      settings: [
+        ["Theme", "Global color profile.", "theme", ["Amber Cathode", "Matrix Terminal", "Cyber-Whacker"]],
+        ["Cursor Type", "Pointer style for the workspace.", "cursor", ["Retro Hand", "Crosshair", "Pixel Pointer", "System Cursor"]],
+        ["Memory Format", "Byte display base.", "memoryFormat", ["Hexadecimal", "Decimal", "Binary"]],
+        ["Register Format", "Debugger display base.", "registerFormat", ["Hexadecimal", "Decimal", "Binary"]]
+      ]
+    };
+
+    const appState = {
+      memoryFormat: "Hexadecimal",
+      registerFormat: "Hexadecimal"
+    };
+
+    function boot() {
+      const bootTimer = setInterval(() => {
+        progress += 5;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(bootTimer);
+          setTimeout(() => ui.body.classList.add("ready"), 250);
+        }
+
+        ui.root.style.setProperty("--load", `${progress}%`);
+        ui.loadNumber.textContent = `${progress}%`;
+      }, 100);
+    }
+
+    function showPanel(panelId) {
+      ui.navButtons.forEach((item) => item.classList.remove("active"));
+      ui.panels.forEach((panel) => panel.classList.remove("active"));
+
+      const button = document.querySelector(`.nav button[data-panel="${panelId}"]`);
+      if (button) button.classList.add("active");
+
+      document.getElementById(panelId).classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function resetVm() {
       pauseVm();
-
-      chip8.memory.fill(0);
-      chip8.v.fill(0);
-      chip8.display.fill(0);
-
-      chip8.i = 0;
-      chip8.pc = 0x200;
-      chip8.stack = [];
-      chip8.delayTimer = 0;
-      chip8.soundTimer = 0;
-      chip8.cycles = 0;
-      chip8.running = false;
-      lastOpcode = 0x00E0;
-
+      chip8.reset();
       loadScratchProgram();
-
-      machineState.textContent = "Paused";
-      printVmState("VM reset");
-      syncEverything();
-    }
-
-    function fetchOpcode() {
-      return (chip8.memory[chip8.pc] << 8) | chip8.memory[chip8.pc + 1];
+      lastLine = "Resetting VM...";
+      sync();
     }
 
     function stepVm(verbose = true) {
-      const opcode = fetchOpcode();
-      const x = (opcode & 0x0F00) >> 8;
-      const y = (opcode & 0x00F0) >> 4;
-      const n = opcode & 0x000F;
-      const nn = opcode & 0x00FF;
-      const nnn = opcode & 0x0FFF;
-      const top = opcode & 0xF000;
-
-      lastOpcode = opcode;
-      chip8.pc += 2;
-      chip8.cycles += 1;
-
-      if (opcode === 0x00E0) {
-        chip8.display.fill(0);
-      } else if (top === 0x1000) {
-        chip8.pc = nnn;
-      } else if (top === 0x3000) {
-        if (chip8.v[x] === nn) chip8.pc += 2;
-      } else if (top === 0x4000) {
-        if (chip8.v[x] !== nn) chip8.pc += 2;
-      } else if ((opcode & 0xF00F) === 0x5000) {
-        if (chip8.v[x] === chip8.v[y]) chip8.pc += 2;
-      } else if (top === 0x6000) {
-        chip8.v[x] = nn;
-      } else if (top === 0x7000) {
-        chip8.v[x] = (chip8.v[x] + nn) & 0xFF;
-      } else if (top === 0x8000) {
-        runRegisterOpcode(x, y, n);
-      } else if (top === 0xA000) {
-        chip8.i = nnn;
-      } else if (top === 0xD000) {
-        drawSprite(x, y, n);
-      } else if ((opcode & 0xF0FF) === 0xF015) {
-        chip8.delayTimer = chip8.v[x];
-      } else if ((opcode & 0xF0FF) === 0xF018) {
-        chip8.soundTimer = chip8.v[x];
+      try {
+        const decoded = chip8.cycle();
+        lastLine = decoded === "waiting" ? "Waiting for key..." : `Executed ${hex(chip8.lastOpcode, 4)} ${decoded}`;
+      } catch (error) {
+        pauseVm();
+        lastLine = error.message;
       }
 
-      if (verbose) {
-        printVmState(`Executed 0x${hex(opcode, 4)} ${describeOpcode(opcode)}`);
-      }
-
-      syncEverything();
-    }
-
-    function runRegisterOpcode(x, y, mode) {
-      if (mode === 0x0) {
-        chip8.v[x] = chip8.v[y];
-      } else if (mode === 0x1) {
-        chip8.v[x] = chip8.v[x] | chip8.v[y];
-      } else if (mode === 0x2) {
-        chip8.v[x] = chip8.v[x] & chip8.v[y];
-      } else if (mode === 0x3) {
-        chip8.v[x] = chip8.v[x] ^ chip8.v[y];
-      } else if (mode === 0x4) {
-        const sum = chip8.v[x] + chip8.v[y];
-        chip8.v[0xF] = sum > 0xFF ? 1 : 0;
-        chip8.v[x] = sum & 0xFF;
-      }
-    }
-
-    function drawSprite(xReg, yReg, height) {
-      const startX = chip8.v[xReg] % 64;
-      const startY = chip8.v[yReg] % 32;
-      let collision = 0;
-
-      for (let row = 0; row < height; row += 1) {
-        const spriteByte = chip8.memory[chip8.i + row];
-
-        for (let bit = 0; bit < 8; bit += 1) {
-          const spritePixel = spriteByte & (0x80 >> bit);
-
-          if (spritePixel) {
-            const x = (startX + bit) % 64;
-            const y = (startY + row) % 32;
-            const index = y * 64 + x;
-
-            if (chip8.display[index] === 1) {
-              collision = 1;
-            }
-
-            chip8.display[index] = chip8.display[index] ^ 1;
-          }
-        }
-      }
-
-      chip8.v[0xF] = collision;
-    }
-
-    function describeOpcode(opcode) {
-      const x = (opcode & 0x0F00) >> 8;
-      const y = (opcode & 0x00F0) >> 4;
-      const n = opcode & 0x000F;
-      const nn = opcode & 0x00FF;
-      const nnn = opcode & 0x0FFF;
-      const top = opcode & 0xF000;
-
-      if (opcode === 0x00E0) return "CLS";
-      if (top === 0x1000) return `JP 0x${hex(nnn, 3)}`;
-      if (top === 0x3000) return `SE V${hex(x, 1)}, 0x${hex(nn, 2)}`;
-      if (top === 0x4000) return `SNE V${hex(x, 1)}, 0x${hex(nn, 2)}`;
-      if ((opcode & 0xF00F) === 0x5000) return `SE V${hex(x, 1)}, V${hex(y, 1)}`;
-      if (top === 0x6000) return `LD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
-      if (top === 0x7000) return `ADD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
-      if (top === 0x8000 && n === 0x0) return `LD V${hex(x, 1)}, V${hex(y, 1)}`;
-      if (top === 0x8000 && n === 0x1) return `OR V${hex(x, 1)}, V${hex(y, 1)}`;
-      if (top === 0x8000 && n === 0x2) return `AND V${hex(x, 1)}, V${hex(y, 1)}`;
-      if (top === 0x8000 && n === 0x3) return `XOR V${hex(x, 1)}, V${hex(y, 1)}`;
-      if (top === 0x8000 && n === 0x4) return `ADD V${hex(x, 1)}, V${hex(y, 1)}`;
-      if (top === 0xA000) return `LD I, 0x${hex(nnn, 3)}`;
-      if (top === 0xD000) return `DRW V${hex(x, 1)}, V${hex(y, 1)}, ${n}`;
-      if ((opcode & 0xF0FF) === 0xF015) return `LD DT, V${hex(x, 1)}`;
-      if ((opcode & 0xF0FF) === 0xF018) return `LD ST, V${hex(x, 1)}`;
-
-      return "UNKNOWN";
-    }
-
-    function tickTimers() {
-      if (chip8.delayTimer > 0) chip8.delayTimer -= 1;
-      if (chip8.soundTimer > 0) chip8.soundTimer -= 1;
+      if (verbose) printVm();
+      sync();
     }
 
     function runVm() {
       if (runLoop) return;
-
-      chip8.running = true;
-      machineState.textContent = "Running";
-
       runLoop = setInterval(() => {
-        const cyclesPerFrame = Math.max(1, Math.floor(Number(speedSlider.value) / 60));
-
-        for (let i = 0; i < cyclesPerFrame; i += 1) {
-          stepVm(false);
-        }
-
-        tickTimers();
-        printVmState("Running");
-        syncEverything();
+        const cyclesPerFrame = Math.max(1, Math.floor(Number(ui.speedSlider.value) / 60));
+        for (let i = 0; i < cyclesPerFrame; i += 1) stepVm(false);
+        chip8.tickTimers();
+        printVm("Running");
+        sync();
       }, 1000 / 60);
     }
 
     function pauseVm() {
-      if (runLoop) {
-        clearInterval(runLoop);
-        runLoop = null;
-      }
-
-      chip8.running = false;
-      machineState.textContent = "Paused";
+      if (runLoop) clearInterval(runLoop);
+      runLoop = null;
     }
 
-    function printVmState(label) {
-      vmLog.textContent =
+    function valueText(value, format, width = 2) {
+      if (format === "Decimal") return String(value);
+      if (format === "Binary") return value.toString(2).padStart(8, "0");
+      return `0x${hex(value, width)}`;
+    }
+
+    function printVm(label = lastLine) {
+      ui.vmLog.textContent =
         `${label}\n\n` +
         `PC: 0x${hex(chip8.pc, 3)}\n` +
         `I:  0x${hex(chip8.i, 3)}\n` +
-        `Opcode: 0x${hex(lastOpcode, 4)}\n` +
-        `Decoded: ${describeOpcode(lastOpcode)}\n` +
+        `Opcode: 0x${hex(chip8.lastOpcode, 4)}\n` +
+        `Decoded: ${chip8.describe()}\n` +
         `Cycles: ${chip8.cycles}\n` +
         `DT: ${chip8.delayTimer}\n` +
         `ST: ${chip8.soundTimer}\n` +
         `Stack depth: ${chip8.stack.length}\n\n` +
-        `V registers:\n` +
-        Array.from(chip8.v)
-          .map((value, index) => `V${index.toString(16).toUpperCase()}: ${value}`)
-          .join("\n");
+        Array.from(chip8.v).map((value, index) => `V${hex(index, 1)}: ${value}`).join("\n");
     }
 
-    function syncEverything() {
-      pcStatus.textContent = `0x${hex(chip8.pc, 3)}`;
-      opcodeStatus.textContent = `0x${hex(lastOpcode, 4)}`;
-      cycleStatus.textContent = chip8.cycles;
-      delayStatus.textContent = chip8.delayTimer;
-      soundStatus.textContent = chip8.soundTimer;
-      delayPanel.textContent = chip8.delayTimer;
-      soundPanel.textContent = chip8.soundTimer;
-
-      syncDebugGrid();
-      syncMemoryGrid();
-      syncScreen();
+    function sync() {
+      renderStatus();
+      renderScreen();
+      renderMemory();
+      renderDebug();
+      renderKeypad();
+      ui.timerPanels.delay.textContent = chip8.delayTimer;
+      ui.timerPanels.sound.textContent = chip8.soundTimer;
     }
 
-    function buildScreenPreview() {
-      for (let index = 0; index < 64 * 32; index += 1) {
-        const pixel = document.createElement("i");
-        pixel.className = "screen-pixel";
-        screenPreview.appendChild(pixel);
-      }
+    function renderStatus() {
+      const rows = [
+        ["Machine State", runLoop ? "Running" : "Paused"],
+        ["Loaded ROM", "Scratch ROM"],
+        ["CPU Clock", `${ui.speedSlider.value} Hz`],
+        ["PC", `0x${hex(chip8.pc, 3)}`],
+        ["Opcode", `0x${hex(chip8.lastOpcode, 4)}`],
+        ["Cycles", chip8.cycles],
+        ["Delay Timer", chip8.delayTimer],
+        ["Sound Timer", chip8.soundTimer]
+      ];
+
+      ui.statusbar.innerHTML = rows.map(([label, value]) =>
+        `<div class="status-item"><span class="status-label">${label}</span><span class="status-value">${value}</span></div>`
+      ).join("");
     }
 
-    function syncScreen() {
-      const pixels = screenPreview.querySelectorAll(".screen-pixel");
-
-      pixels.forEach((pixel, index) => {
-        pixel.classList.toggle("on", chip8.display[index] === 1);
-      });
+    function renderScreen() {
+      const pixels = ui.screen.children;
+      for (let i = 0; i < pixels.length; i += 1) pixels[i].classList.toggle("on", chip8.display[i] === 1);
     }
 
-    function buildMemoryGrid() {
-      for (let index = 0; index < 96; index += 1) {
-        const cell = document.createElement("span");
+    function renderMemory() {
+      const cells = ui.memoryGrid.children;
+
+      for (let i = 0; i < cells.length; i += 1) {
+        const address = 0x200 + i;
+        const cell = cells[i];
+
+        cell.textContent = valueText(chip8.memory[address], appState.memoryFormat);
         cell.className = "byte";
-        memoryGrid.appendChild(cell);
-      }
-    }
-
-    function syncMemoryGrid() {
-      const cells = memoryGrid.querySelectorAll(".byte");
-
-      cells.forEach((cell, index) => {
-        const address = 0x200 + index;
-
-        cell.textContent = hex(chip8.memory[address], 2);
-        cell.className = "byte";
-
         if (address === chip8.pc) cell.classList.add("pc");
         if (address === chip8.pc - 2 || address === chip8.pc - 1) cell.classList.add("read");
-      });
+      }
     }
 
-    function syncDebugGrid() {
-      debugGrid.innerHTML = "";
+    function renderDebug() {
+      const rows = [];
 
-      for (let index = 0; index < 16; index += 1) {
-        const register = document.createElement("div");
-        const name = index.toString(16).toUpperCase();
+      for (let i = 0; i < 16; i += 1) rows.push([`V${hex(i, 1)}`, valueText(chip8.v[i], appState.registerFormat)]);
 
-        register.className = "register";
-        register.innerHTML = `<span>V${name}</span><strong>0x${hex(chip8.v[index], 2)}</strong>`;
-        debugGrid.appendChild(register);
-      }
-
-      const system = [
+      rows.push(
         ["I", `0x${hex(chip8.i, 3)}`],
         ["PC", `0x${hex(chip8.pc, 3)}`],
         ["SP", chip8.stack.length],
         ["DT", chip8.delayTimer],
         ["ST", chip8.soundTimer],
         ["CY", chip8.cycles]
-      ];
+      );
 
-      system.forEach((item) => {
-        const register = document.createElement("div");
-        register.className = "register";
-        register.innerHTML = `<span>${item[0]}</span><strong>${item[1]}</strong>`;
-        debugGrid.appendChild(register);
+      ui.debugGrid.innerHTML = rows.map(([label, value]) =>
+        `<div class="register"><span>${label}</span><strong>${value}</strong></div>`
+      ).join("");
+    }
+
+    function renderKeypad() {
+      Array.from(ui.keypadGrid.children).forEach((button, index) => {
+        button.classList.toggle("down", chip8.keys[index] === 1);
       });
     }
 
-    vmResetButton.addEventListener("click", resetVm);
-    mainResetButton.addEventListener("click", resetVm);
-    stepButton.addEventListener("click", () => stepVm(true));
-    runButton.addEventListener("click", runVm);
-    pauseButton.addEventListener("click", pauseVm);
+    function buildCards(target, rows, withArt = false) {
+      const template = document.querySelector("#card-template");
+      target.innerHTML = "";
 
-    buildScreenPreview();
-    buildMemoryGrid();
+      rows.forEach(([title, text]) => {
+        const node = template.content.cloneNode(true);
+        node.querySelector("strong").textContent = title;
+        node.querySelector("span").textContent = text;
+        if (!withArt) node.querySelector(".game-art").remove();
+        target.appendChild(node);
+      });
+    }
+
+    function buildSettings() {
+      const template = document.querySelector("#setting-template");
+      ui.settingsGrid.innerHTML = "";
+
+      data.settings.forEach(([label, help, key, options]) => {
+        const node = template.content.cloneNode(true);
+        const span = node.querySelector("span");
+        const select = node.querySelector("select");
+
+        span.innerHTML = `${label} <small>${help}</small>`;
+        select.dataset.setting = key;
+
+        options.forEach((option) => {
+          const item = document.createElement("option");
+          item.value = option;
+          item.textContent = option;
+          select.appendChild(item);
+        });
+
+        ui.settingsGrid.appendChild(node);
+      });
+
+      const pixel = document.createElement("label");
+      pixel.className = "setting-row";
+      pixel.innerHTML = `<span>Pixelated Effect <small>Large block grid and hard panel edges.</small></span><input id="pixel-toggle" type="checkbox" checked>`;
+      ui.settingsGrid.appendChild(pixel);
+
+      const font = document.createElement("label");
+      font.className = "setting-row";
+      font.innerHTML = `<span>Editor Font <small>Assembly editor text size.</small></span><input id="editor-size" type="range" min="13" max="20" value="15">`;
+      ui.settingsGrid.appendChild(font);
+
+      ui.settingsGrid.addEventListener("change", (event) => {
+        const key = event.target.dataset.setting;
+        if (!key) return;
+
+        if (key === "theme") {
+          const map = { "Amber Cathode": "amber", "Matrix Terminal": "matrix", "Cyber-Whacker": "cyber" };
+          ui.body.dataset.theme = map[event.target.value];
+        } else if (key === "cursor") {
+          const map = { "Retro Hand": "hand", "Crosshair": "crosshair", "Pixel Pointer": "pixel", "System Cursor": "system" };
+          ui.cursor.className = `custom-cursor ${map[event.target.value]}`;
+          ui.body.classList.toggle("system-cursor", event.target.value === "System Cursor");
+        } else if (key === "memoryFormat") {
+          appState.memoryFormat = event.target.value;
+        } else if (key === "registerFormat") {
+          appState.registerFormat = event.target.value;
+        }
+
+        sync();
+      });
+
+      ui.settingsGrid.querySelector("#pixel-toggle").addEventListener("change", (event) => {
+        ui.body.classList.toggle("pixelated", event.target.checked);
+      });
+
+      ui.settingsGrid.querySelector("#editor-size").addEventListener("input", (event) => {
+        ui.root.style.setProperty("--editor-size", `${event.target.value}px`);
+      });
+    }
+
+    function buildStaticGrids() {
+      for (let i = 0; i < 64 * 32; i += 1) ui.screen.appendChild(document.createElement("i")).className = "screen-pixel";
+      for (let i = 0; i < 96; i += 1) ui.memoryGrid.appendChild(document.createElement("span")).className = "byte";
+
+      keypadLabels.forEach((label, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.addEventListener("pointerdown", () => chip8.setKey(index, true));
+        button.addEventListener("pointerup", () => chip8.setKey(index, false));
+        button.addEventListener("pointerleave", () => chip8.setKey(index, false));
+        ui.keypadGrid.appendChild(button);
+      });
+    }
+
+    function bindEvents() {
+      window.addEventListener("pointermove", (event) => {
+        ui.cursor.style.transform = `translate(${event.clientX - 3}px, ${event.clientY - 3}px)`;
+      });
+
+      window.addEventListener("keydown", (event) => {
+        const key = keyMap[event.key.toLowerCase()];
+        if (key !== undefined) {
+          chip8.setKey(key, true);
+          sync();
+        }
+      });
+
+      window.addEventListener("keyup", (event) => {
+        const key = keyMap[event.key.toLowerCase()];
+        if (key !== undefined) {
+          chip8.setKey(key, false);
+          sync();
+        }
+      });
+
+      ui.navButtons.forEach((button) => button.addEventListener("click", () => showPanel(button.dataset.panel)));
+      ui.brandButton.addEventListener("click", () => showPanel("dashboard"));
+      ui.speedSlider.addEventListener("input", sync);
+      ui.buttons.reset.addEventListener("click", resetVm);
+      ui.buttons.resetScratch.addEventListener("click", resetVm);
+      ui.buttons.step.addEventListener("click", () => stepVm(true));
+      ui.buttons.run.addEventListener("click", runVm);
+      ui.buttons.pause.addEventListener("click", pauseVm);
+    }
+
+    buildCards(ui.featureCards, data.features);
+    buildCards(ui.gameGrid, data.games, true);
+    buildSettings();
+    buildStaticGrids();
+    bindEvents();
     resetVm();
+    boot();
   </script>
 </body>
 </html>
