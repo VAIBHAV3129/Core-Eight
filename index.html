@@ -301,7 +301,6 @@
       padding: 0;
     }
 
-    
     .brand:hover {
       filter: drop-shadow(0 0 12px var(--red));
     }
@@ -366,8 +365,27 @@
     }
 
     .nav button[data-panel="dashboard"] {
-      min-width: 132px;
-      border-color: var(--red);
+      position: relative;
+      min-width: 174px;
+      padding: 12px 18px 12px 24px;
+      border: 2px solid var(--red);
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      background:
+        linear-gradient(90deg, rgba(255, 42, 22, 0.34), rgba(255, 42, 22, 0.08)),
+        var(--panel2);
+      box-shadow:
+        inset 5px 0 0 var(--red),
+        0 0 18px rgba(255, 42, 22, 0.24);
+    }
+
+    .nav button[data-panel="dashboard"]::before {
+      content: "◆";
+      position: absolute;
+      left: 8px;
+      color: var(--green);
+      text-shadow: 0 0 10px var(--green);
     }
 
     .nav button:hover,
@@ -381,8 +399,9 @@
     }
 
     .nav button[data-panel="dashboard"].active {
+      animation: dashboardPulse 1.8s steps(2) infinite;
       background:
-        linear-gradient(90deg, rgba(255, 42, 22, 0.34), transparent),
+        linear-gradient(90deg, rgba(255, 42, 22, 0.55), rgba(255, 42, 22, 0.12)),
         var(--panel2);
     }
 
@@ -894,6 +913,20 @@
       50% { transform: translate(10px, -8px); }
       100% { transform: translate(0, 0); }
     }
+
+    @keyframes dashboardPulse {
+      0%, 100% {
+        box-shadow:
+          inset 5px 0 0 var(--red),
+          0 0 18px rgba(255, 42, 22, 0.28);
+      }
+
+      50% {
+        box-shadow:
+          inset 5px 0 0 var(--green),
+          0 0 28px rgba(109, 255, 186, 0.28);
+      }
+    }
   </style>
 </head>
 
@@ -942,7 +975,7 @@
         <h1>Chip-8 IDE and Virtual Machine</h1>
         <p>
           CoreEight is a web-based integrated development environment and cycle-accurate
-          virtual machine designed for the Chip-8 architecture, featuring a live memory visualizer,
+          virtual machine for the Chip-8 architecture, featuring a live memory visualizer,
           interactive register debugger, and integrated native assembly compiler.
         </p>
 
@@ -992,7 +1025,7 @@
 
       <article class="panel" id="ide">
         <h2>Integrated Assembly Compiler</h2>
-        <p>This editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.</p>
+        <p>The editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.</p>
 
         <div class="editor-shell">
           <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</div>
@@ -1348,9 +1381,7 @@
         if ((opcode & 0xF00F) === 0x5000) return `SE V${hex(x, 1)}, V${hex(y, 1)}`;
         if (top === 0x6000) return `LD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
         if (top === 0x7000) return `ADD V${hex(x, 1)}, 0x${hex(nn, 2)}`;
-        if (top === 0x8000) {
-          return ["LD", "OR", "AND", "XOR", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", "SHL"][n] + ` V${hex(x, 1)}, V${hex(y, 1)}`;
-        }
+        if (top === 0x8000) return ["LD", "OR", "AND", "XOR", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", "SHL"][n] + ` V${hex(x, 1)}, V${hex(y, 1)}`;
         if ((opcode & 0xF00F) === 0x9000) return `SNE V${hex(x, 1)}, V${hex(y, 1)}`;
         if (top === 0xA000) return `LD I, 0x${hex(nnn, 3)}`;
         if (top === 0xB000) return `JP V0, 0x${hex(nnn, 3)}`;
