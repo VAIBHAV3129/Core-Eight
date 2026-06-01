@@ -72,6 +72,7 @@
     body.system-cursor button,
     body.system-cursor input,
     body.system-cursor select,
+    body.system-cursor textarea,
     body.system-cursor a {
       cursor: pointer;
     }
@@ -107,7 +108,9 @@
     body.pixelated .screen,
     body.pixelated .vm-debug,
     body.pixelated .credit-box,
-    body.pixelated .settings-footer {
+    body.pixelated .settings-footer,
+    body.pixelated .editor-shell,
+    body.pixelated .terminal {
       border-radius: 0;
       box-shadow: 6px 6px 0 rgba(255, 42, 22, 0.22);
     }
@@ -115,6 +118,7 @@
     button,
     input,
     select,
+    textarea,
     a {
       font: inherit;
       cursor: none;
@@ -484,7 +488,8 @@
       padding: 18px;
     }
 
-    .transport {
+    .transport,
+    .editor-actions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -612,7 +617,7 @@
     .editor-shell {
       display: grid;
       grid-template-columns: auto 1fr;
-      min-height: 300px;
+      min-height: 360px;
       overflow: hidden;
       margin-top: 18px;
       border: 1px solid rgba(255, 224, 163, 0.18);
@@ -628,31 +633,23 @@
       text-align: right;
       line-height: 1.65;
       user-select: none;
+      min-width: 44px;
     }
 
     .code-area {
+      width: 100%;
+      min-height: 360px;
       margin: 0;
       padding: 14px;
-      overflow: auto;
+      border: 0;
+      outline: 0;
+      resize: vertical;
       color: var(--text);
+      background: transparent;
       font-size: var(--editor-size);
       line-height: 1.65;
-    }
-
-    .op {
-      color: #ffffff;
-    }
-
-    .reg {
-      color: var(--cyan);
-    }
-
-    .num {
-      color: var(--red);
-    }
-
-    .label {
-      color: var(--green);
+      white-space: pre;
+      tab-size: 2;
     }
 
     .terminal {
@@ -663,6 +660,7 @@
       border: 1px solid rgba(255, 224, 163, 0.18);
       border-radius: 8px;
       background: rgba(0, 0, 0, 0.24);
+      white-space: pre-wrap;
     }
 
     .memory-grid {
@@ -1025,27 +1023,19 @@
 
       <article class="panel" id="ide">
         <h2>Integrated Assembly Compiler</h2>
-        <p>The editor uses Chip-8 assembly syntax, line numbers, and a compiler terminal.</p>
+        <p>Write assembly, assemble it into bytes, then load it into the VM.</p>
+
+        <div class="editor-actions">
+          <button class="control-button" type="button" id="assemble-code">Assemble</button>
+          <button class="control-button" type="button" id="load-assembled">Load Into VM</button>
+        </div>
 
         <div class="editor-shell">
-          <div class="line-numbers">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9</div>
-          <pre class="code-area"><span class="label">START:</span>
-  <span class="op">CLS</span>
-  <span class="op">LD</span> <span class="reg">V0</span>, <span class="num">0x08</span>
-  <span class="op">LD</span> <span class="reg">V1</span>, <span class="num">0x06</span>
-  <span class="op">LD</span> I, SPRITE_CORE
-  <span class="op">DRW</span> <span class="reg">V0</span>, <span class="reg">V1</span>, <span class="num">0x5</span>
-  <span class="op">LD</span> <span class="reg">V2</span>, <span class="num">0x0A</span>
-  <span class="op">LD</span> DT, <span class="reg">V2</span>
-  <span class="op">LD</span> ST, <span class="reg">V2</span></pre>
+          <div class="line-numbers" id="asm-lines"></div>
+          <textarea class="code-area" id="asm-editor" spellcheck="false"></textarea>
         </div>
 
-        <div class="terminal" id="asm-terminal">
-          Assembler ready<br>
-          0200: 00E0 CLS<br>
-          0202: 6008 LD V0, 0x08<br>
-          0208: D015 DRW V0, V1, 5
-        </div>
+        <div class="terminal" id="asm-terminal">Assembler ready</div>
       </article>
 
       <article class="panel" id="memory">
@@ -1147,6 +1137,9 @@
       debugGrid: document.querySelector("#debug-grid"),
       keypadGrid: document.querySelector("#keypad-grid"),
       vmLog: document.querySelector("#vm-log"),
+      asmEditor: document.querySelector("#asm-editor"),
+      asmLines: document.querySelector("#asm-lines"),
+      asmTerminal: document.querySelector("#asm-terminal"),
       timerPanels: {
         delay: document.querySelector("#dt-panel"),
         sound: document.querySelector("#st-panel")
@@ -1156,7 +1149,9 @@
         pause: document.querySelector("#pause-vm"),
         step: document.querySelector("#step-vm"),
         reset: document.querySelector("#reset-vm-main"),
-        resetScratch: document.querySelector("#vm-reset")
+        resetScratch: document.querySelector("#vm-reset"),
+        assemble: document.querySelector("#assemble-code"),
+        loadAssembled: document.querySelector("#load-assembled")
       }
     };
 
@@ -1402,34 +1397,227 @@
       }
     }
 
+    class Assembler {
+      constructor(origin = 0x200) {
+        this.origin = origin;
+      }
+
+      assemble(source) {
+        this.labels = {};
+        this.errors = [];
+        this.lines = this.clean(source);
+
+        this.firstPass();
+        const bytes = this.secondPass();
+
+        return {
+          bytes: Uint8Array.from(bytes),
+          labels: this.labels,
+          errors: this.errors
+        };
+      }
+
+      clean(source) {
+        return source.split("\n").map((raw, index) => {
+          const text = raw.split(";")[0].trim();
+          return { raw, text, line: index + 1 };
+        }).filter((line) => line.text.length > 0);
+      }
+
+      firstPass() {
+        let pc = this.origin;
+
+        this.lines.forEach((line) => {
+          const body = this.takeLabel(line, pc);
+          if (!body) return;
+
+          if (body.toUpperCase().startsWith("DB ")) {
+            pc += this.parseDb(body, line).length;
+          } else {
+            pc += 2;
+          }
+        });
+      }
+
+      secondPass() {
+        const out = [];
+        let pc = this.origin;
+
+        this.lines.forEach((line) => {
+          const body = this.takeLabel(line, pc);
+          if (!body) return;
+
+          if (body.toUpperCase().startsWith("DB ")) {
+            this.parseDb(body, line).forEach((byte) => out.push(byte));
+            pc += this.parseDb(body, line).length;
+            return;
+          }
+
+          const word = this.encode(body, line);
+          if (word !== null) {
+            out.push((word >> 8) & 0xFF, word & 0xFF);
+            pc += 2;
+          }
+        });
+
+        return out;
+      }
+
+      takeLabel(line, pc) {
+        const colon = line.text.indexOf(":");
+
+        if (colon === -1) return line.text;
+
+        const label = line.text.slice(0, colon).trim();
+        if (!/^[A-Z_][A-Z0-9_]*$/i.test(label)) {
+          this.errors.push(`Line ${line.line}: bad label ${label}`);
+          return "";
+        }
+
+        this.labels[label.toUpperCase()] = pc;
+        return line.text.slice(colon + 1).trim();
+      }
+
+      encode(text, line) {
+        const parts = text.replace(/,/g, " ").split(/\s+/).filter(Boolean);
+        const op = parts[0]?.toUpperCase();
+
+        if (op === "CLS") return 0x00E0;
+        if (op === "RET") return 0x00EE;
+
+        if (op === "JP") {
+          if (parts[1]?.toUpperCase() === "V0") return 0xB000 | this.addr(parts[2], line);
+          return 0x1000 | this.addr(parts[1], line);
+        }
+
+        if (op === "CALL") return 0x2000 | this.addr(parts[1], line);
+        if (op === "SE" && this.isReg(parts[1]) && !this.isReg(parts[2])) return 0x3000 | (this.reg(parts[1]) << 8) | this.byte(parts[2], line);
+        if (op === "SNE" && this.isReg(parts[1]) && !this.isReg(parts[2])) return 0x4000 | (this.reg(parts[1]) << 8) | this.byte(parts[2], line);
+        if (op === "SE" && this.isReg(parts[1]) && this.isReg(parts[2])) return 0x5000 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4);
+        if (op === "SNE" && this.isReg(parts[1]) && this.isReg(parts[2])) return 0x9000 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4);
+
+        if (op === "LD") return this.encodeLd(parts, line);
+        if (op === "ADD") return this.encodeAdd(parts, line);
+
+        if (["OR", "AND", "XOR"].includes(op)) {
+          const modes = { OR: 1, AND: 2, XOR: 3 };
+          return 0x8000 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4) | modes[op];
+        }
+
+        if (op === "SUB") return 0x8005 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4);
+        if (op === "SUBN") return 0x8007 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4);
+        if (op === "SHR") return 0x8006 | (this.reg(parts[1]) << 8) | (this.reg(parts[2] || parts[1]) << 4);
+        if (op === "SHL") return 0x800E | (this.reg(parts[1]) << 8) | (this.reg(parts[2] || parts[1]) << 4);
+        if (op === "RND") return 0xC000 | (this.reg(parts[1]) << 8) | this.byte(parts[2], line);
+        if (op === "DRW") return 0xD000 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4) | (this.num(parts[3], line) & 0xF);
+        if (op === "SKP") return 0xE09E | (this.reg(parts[1]) << 8);
+        if (op === "SKNP") return 0xE0A1 | (this.reg(parts[1]) << 8);
+
+        this.errors.push(`Line ${line.line}: unknown instruction ${text}`);
+        return null;
+      }
+
+      encodeLd(parts, line) {
+        const a = parts[1]?.toUpperCase();
+        const b = parts[2]?.toUpperCase();
+
+        if (this.isReg(a) && this.isReg(b)) return 0x8000 | (this.reg(a) << 8) | (this.reg(b) << 4);
+        if (this.isReg(a) && b === "DT") return 0xF007 | (this.reg(a) << 8);
+        if (this.isReg(a) && b === "K") return 0xF00A | (this.reg(a) << 8);
+        if (this.isReg(a)) return 0x6000 | (this.reg(a) << 8) | this.byte(parts[2], line);
+
+        if (a === "I") return 0xA000 | this.addr(parts[2], line);
+        if (a === "DT") return 0xF015 | (this.reg(parts[2]) << 8);
+        if (a === "ST") return 0xF018 | (this.reg(parts[2]) << 8);
+        if (a === "F") return 0xF029 | (this.reg(parts[2]) << 8);
+        if (a === "B") return 0xF033 | (this.reg(parts[2]) << 8);
+        if (a === "[I]") return 0xF055 | (this.reg(parts[2]) << 8);
+        if (this.isReg(a) && b === "[I]") return 0xF065 | (this.reg(a) << 8);
+
+        this.errors.push(`Line ${line.line}: bad LD form`);
+        return null;
+      }
+
+      encodeAdd(parts, line) {
+        if (parts[1]?.toUpperCase() === "I") return 0xF01E | (this.reg(parts[2]) << 8);
+        if (this.isReg(parts[2])) return 0x8004 | (this.reg(parts[1]) << 8) | (this.reg(parts[2]) << 4);
+        return 0x7000 | (this.reg(parts[1]) << 8) | this.byte(parts[2], line);
+      }
+
+      parseDb(text, line) {
+        return text.slice(3).split(",").map((part) => this.byte(part.trim(), line));
+      }
+
+      isReg(value) {
+        return /^V[0-9A-F]$/i.test(value || "");
+      }
+
+      reg(value) {
+        return parseInt(value.slice(1), 16);
+      }
+
+      byte(value, line) {
+        const n = this.num(value, line);
+        if (n < 0 || n > 0xFF) this.errors.push(`Line ${line.line}: byte out of range ${value}`);
+        return n & 0xFF;
+      }
+
+      addr(value, line) {
+        const n = this.num(value, line);
+        if (n < 0 || n > 0xFFF) this.errors.push(`Line ${line.line}: address out of range ${value}`);
+        return n & 0xFFF;
+      }
+
+      num(value, line) {
+        if (!value) {
+          this.errors.push(`Line ${line.line}: missing value`);
+          return 0;
+        }
+
+        const key = value.toUpperCase();
+        if (this.labels[key] !== undefined) return this.labels[key];
+
+        if (/^0X[0-9A-F]+$/i.test(value)) return parseInt(value, 16);
+        if (/^\$[0-9A-F]+$/i.test(value)) return parseInt(value.slice(1), 16);
+        if (/^[0-9]+$/.test(value)) return parseInt(value, 10);
+
+        this.errors.push(`Line ${line.line}: unknown value ${value}`);
+        return 0;
+      }
+    }
+
     const chip8 = new Chip8();
+    const assembler = new Assembler();
     let progress = 0;
     let runLoop = null;
     let lastLine = "Resetting VM...";
+    let currentProgramName = "Scratch ROM";
+    let assembledBytes = null;
 
     function hex(value, width) {
       return value.toString(16).toUpperCase().padStart(width, "0");
     }
 
+    const sampleAssembly = `START:
+  CLS
+  LD V0, 0x08
+  LD V1, 0x06
+  LD I, SPRITE_CORE
+  DRW V0, V1, 5
+  LD V2, 10
+  LD DT, V2
+  LD ST, V2
+  ADD V0, 1
+  DRW V0, V1, 5
+  JP 0x210
+
+SPRITE_CORE:
+  DB 0xF0, 0x90, 0xF0, 0x90, 0x90`;
+
     function loadScratchProgram() {
-      const program = [
-        0x00, 0xE0,
-        0x60, 0x08,
-        0x61, 0x06,
-        0xA3, 0x00,
-        0xD0, 0x15,
-        0x62, 0x0A,
-        0xF2, 0x15,
-        0xF2, 0x18,
-        0x70, 0x01,
-        0xD0, 0x15,
-        0x12, 0x10
-      ];
-
-      const sprite = [0xF0, 0x90, 0xF0, 0x90, 0x90];
-
-      chip8.loadProgram(program);
-      chip8.memory.set(sprite, 0x300);
+      const result = assembler.assemble(sampleAssembly);
+      chip8.loadProgram(result.bytes);
+      assembledBytes = result.bytes;
     }
 
     const data = {
@@ -1488,7 +1676,22 @@
       pauseVm();
       chip8.reset();
       loadScratchProgram();
+      currentProgramName = "Scratch ROM";
       lastLine = "Resetting VM...";
+      sync();
+    }
+
+    function loadAssembledProgram() {
+      if (!assembledBytes || assembledBytes.length === 0) assembleEditor();
+
+      if (!assembledBytes || assembledBytes.length === 0) return;
+
+      pauseVm();
+      chip8.reset();
+      chip8.loadProgram(assembledBytes);
+      currentProgramName = "Assembler Output";
+      lastLine = "Loaded assembled program";
+      printVm();
       sync();
     }
 
@@ -1519,6 +1722,30 @@
     function pauseVm() {
       if (runLoop) clearInterval(runLoop);
       runLoop = null;
+    }
+
+    function assembleEditor() {
+      const result = assembler.assemble(ui.asmEditor.value);
+      assembledBytes = result.errors.length ? null : result.bytes;
+
+      const bytes = Array.from(result.bytes).map((byte) => hex(byte, 2)).join(" ");
+      const labels = Object.entries(result.labels).map(([name, addr]) => `${name}: 0x${hex(addr, 3)}`).join("\n");
+
+      if (result.errors.length) {
+        ui.asmTerminal.textContent = `Assembling...\n\n${result.errors.join("\n")}`;
+        return;
+      }
+
+      ui.asmTerminal.textContent =
+        `Assembling...\n` +
+        `OK: ${result.bytes.length} bytes\n\n` +
+        `${labels || "No labels"}\n\n` +
+        bytes;
+    }
+
+    function updateLineNumbers() {
+      const count = ui.asmEditor.value.split("\n").length;
+      ui.asmLines.innerHTML = Array.from({ length: count }, (_, i) => i + 1).join("<br>");
     }
 
     function valueText(value, format, width = 2) {
@@ -1554,7 +1781,7 @@
     function renderStatus() {
       const rows = [
         ["Machine State", runLoop ? "Running" : "Paused"],
-        ["Loaded ROM", "Scratch ROM"],
+        ["Loaded ROM", currentProgramName],
         ["CPU Clock", `${ui.speedSlider.value} Hz`],
         ["PC", `0x${hex(chip8.pc, 3)}`],
         ["Opcode", `0x${hex(chip8.lastOpcode, 4)}`],
@@ -1730,14 +1957,20 @@
       ui.buttons.step.addEventListener("click", () => stepVm(true));
       ui.buttons.run.addEventListener("click", runVm);
       ui.buttons.pause.addEventListener("click", pauseVm);
+      ui.buttons.assemble.addEventListener("click", assembleEditor);
+      ui.buttons.loadAssembled.addEventListener("click", loadAssembledProgram);
+      ui.asmEditor.addEventListener("input", updateLineNumbers);
     }
 
+    ui.asmEditor.value = sampleAssembly;
+    updateLineNumbers();
     buildCards(ui.featureCards, data.features);
     buildCards(ui.gameGrid, data.games, true);
     buildSettings();
     buildStaticGrids();
     bindEvents();
     resetVm();
+    assembleEditor();
     boot();
   </script>
 </body>
