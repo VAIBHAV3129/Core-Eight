@@ -690,6 +690,12 @@
       color: var(--green);
     }
 
+    .byte.breakpoint {
+      border-color: var(--red);
+      color: var(--red);
+      background: rgba(255, 42, 22, 0.1);
+    }
+
     .debug-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -874,6 +880,38 @@
         12px 12px 0 rgba(0,0,0,0.45);
     }
 
+    /* Breakpoint Styles */
+    .breakpoint-ctrl {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .breakpoint-ctrl input {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px;
+      width: 100px;
+    }
+    .breakpoint-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .bp-chip {
+      padding: 4px 8px;
+      border: 1px solid var(--red);
+      background: rgba(255, 42, 22, 0.1);
+      color: var(--red);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .bp-chip:hover {
+      background: var(--red);
+      color: #fff;
+    }
+
     @media (max-width: 1050px) {
       .topbar {
         grid-template-columns: 1fr;
@@ -1001,7 +1039,7 @@
               <div class="timer-box">
                 <span>Delay Timer</span>
                 <strong id="dt-panel">0</strong>
-              </div>
+              </div
               <div class="timer-box">
                 <span>Sound Timer</span>
                 <strong id="st-panel">0</strong>
@@ -1018,7 +1056,7 @@
           </section>
 
           <section class="card-grid" id="feature-cards"></section>
-        </div>
+        </div
       </article>
 
       <article class="panel" id="ide">
@@ -1028,6 +1066,11 @@
         <div class="editor-actions">
           <button class="control-button" type="button" id="assemble-code">Assemble</button>
           <button class="control-button" type="button" id="load-assembled">Load Into VM</button>
+          <button class="control-button" type="button" id="export-rom">Export ROM</button>
+          <label class="control-button">
+            Import ROM
+            <input type="file" id="import-rom" style="display:none" accept=".ch8,.bin">
+          </label>
         </div>
 
         <div class="editor-shell">
@@ -1040,7 +1083,7 @@
 
       <article class="panel" id="memory">
         <h2>Live Memory Visualizer</h2>
-        <p>Memory bytes use separate visual states for the program counter and recent fetch reads.</p>
+        <p>Memory bytes use separate visual states for the program counter, read history, and breakpoints.</p>
         <div class="memory-grid" id="memory-grid"></div>
       </article>
 
@@ -1048,6 +1091,14 @@
         <h2>Interactive Register Debugger</h2>
         <p>Registers V0 through VF share space with system values for I, PC, SP, delay timer, and sound timer.</p>
         <div class="debug-grid" id="debug-grid"></div>
+
+        <h2 style="margin-top:22px;">Breakpoints</h2>
+        <p>Pause execution when the Program Counter matches a specific address.</p>
+        <div class="breakpoint-ctrl">
+          <input type="text" id="bp-input" placeholder="e.g. 200">
+          <button class="control-button" type="button" id="add-bp">Add BP</button>
+        </div>
+        <div class="breakpoint-list" id="bp-list"></div>
 
         <h2 style="margin-top:22px;">Keypad</h2>
         <p>Keyboard map: 1 2 3 4 / Q W E R / A S D F / Z X C V.</p>
@@ -1151,8 +1202,13 @@
         reset: document.querySelector("#reset-vm-main"),
         resetScratch: document.querySelector("#vm-reset"),
         assemble: document.querySelector("#assemble-code"),
-        loadAssembled: document.querySelector("#load-assembled")
-      }
+        loadAssembled: document.querySelector("#load-assembled"),
+        exportRom: document.querySelector("#export-rom"),
+        importRom: document.querySelector("#import-rom"),
+        addBp: document.querySelector("#add-bp")
+      },
+      bpInput: document.querySelector("#bp-input"),
+      bpList: document.querySelector("#bp-list")
     };
 
     const keyMap = {
@@ -1171,6 +1227,7 @@
         this.display = new Uint8Array(64 * 32);
         this.keys = new Uint8Array(16);
         this.stack = [];
+        this.breakpoints = new Set();
         this.waitingForKey = null;
         this.quirks = { shiftUsesVy: false, incrementI: true };
         this.reset();
@@ -1207,6 +1264,7 @@
       }
 
       loadProgram(bytes, start = 0x200) {
+        this.memory.fill(0, start, start + bytes.length);
         this.memory.set(bytes, start);
         this.pc = start;
       }
@@ -1217,6 +1275,11 @@
 
       cycle() {
         if (this.waitingForKey !== null) return "waiting";
+
+        // Breakpoint Check
+        if (this.breakpoints.has(this.pc)) {
+          return "BREAKPOINT_HIT";
+        }
 
         const opcode = this.fetch();
         this.lastOpcode = opcode;
@@ -1741,7 +1804,12 @@ SPRITE_CORE:
     function stepVm(verbose = true) {
       try {
         const decoded = chip8.cycle();
-        lastLine = decoded === "waiting" ? "Waiting for key..." : `Executed ${hex(chip8.lastOpcode, 4)} ${decoded}`;
+        if (decoded === "BREAKPOINT_HIT") {
+          pauseVm();
+          lastLine = `BREAKPOINT HIT at 0x${hex(chip8.pc, 3)}`;
+        } else {
+          lastLine = decoded === "waiting" ? "Waiting for key..." : `Executed ${hex(chip8.lastOpcode, 4)} ${decoded}`;
+        }
       } catch (error) {
         pauseVm();
         lastLine = error.message;
@@ -1755,7 +1823,10 @@ SPRITE_CORE:
       if (runLoop) return;
       runLoop = setInterval(() => {
         const cyclesPerFrame = Math.max(1, Math.floor(Number(ui.speedSlider.value) / 60));
-        for (let i = 0; i < cyclesPerFrame; i += 1) stepVm(false);
+        for (let i = 0; i < cyclesPerFrame; i += 1) {
+          const res = stepVm(false);
+          if (res === "BREAKPOINT_HIT") break;
+        }
         chip8.tickTimers();
         printVm("Running");
         sync();
@@ -1817,6 +1888,7 @@ SPRITE_CORE:
       renderMemory();
       renderDebug();
       renderKeypad();
+      renderBreakpoints();
       ui.timerPanels.delay.textContent = chip8.delayTimer;
       ui.timerPanels.sound.textContent = chip8.soundTimer;
     }
@@ -1854,6 +1926,7 @@ SPRITE_CORE:
         cell.className = "byte";
         if (address === chip8.pc) cell.classList.add("pc");
         if (address === chip8.pc - 2 || address === chip8.pc - 1) cell.classList.add("read");
+        if (chip8.breakpoints.has(address)) cell.classList.add("breakpoint");
       }
     }
 
@@ -1879,6 +1952,20 @@ SPRITE_CORE:
     function renderKeypad() {
       Array.from(ui.keypadGrid.children).forEach((button, index) => {
         button.classList.toggle("down", chip8.keys[index] === 1);
+      });
+    }
+
+    function renderBreakpoints() {
+      ui.bpList.innerHTML = "";
+      chip8.breakpoints.forEach(addr => {
+        const chip = document.createElement("span");
+        chip.className = "bp-chip";
+        chip.textContent = `0x${hex(addr, 3)} ✕`;
+        chip.onclick = () => {
+          chip8.breakpoints.delete(addr);
+          sync();
+        };
+        ui.bpList.appendChild(chip);
       });
     }
 
@@ -2003,6 +2090,46 @@ SPRITE_CORE:
       ui.buttons.assemble.addEventListener("click", assembleEditor);
       ui.buttons.loadAssembled.addEventListener("click", loadAssembledProgram);
       ui.asmEditor.addEventListener("input", updateLineNumbers);
+
+      // Breakpoint Logic
+      ui.buttons.addBp.addEventListener("click", () => {
+        const addr = parseInt(ui.bpInput.value, 16);
+        if (!isNaN(addr)) {
+          chip8.breakpoints.add(addr);
+          ui.bpInput.value = "";
+          sync();
+        }
+      });
+
+      // ROM Import
+      ui.buttons.importRom.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const bytes = new Uint8Array(evt.target.result);
+          pauseVm();
+          chip8.reset();
+          chip8.loadProgram(bytes);
+          currentProgramName = file.name;
+          lastLine = `Imported ROM: ${file.name}`;
+          printVm();
+          sync();
+        };
+        reader.readAsArrayBuffer(file);
+      });
+
+      // ROM Export
+      ui.buttons.exportRom.addEventListener("click", () => {
+        const programBytes = chip8.memory.slice(0x200);
+        const blob = new Blob([programBytes], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "program.ch8";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
     }
 
     ui.asmEditor.value = sampleAssembly;
