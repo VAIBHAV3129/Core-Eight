@@ -557,14 +557,6 @@
       padding: 14px;
       min-height: 118px;
       background: var(--panel2);
-      cursor: pointer;
-      transition: all 150ms ease;
-      border: 1px solid transparent;
-    }
-    .card:hover {
-      border-color: var(--red);
-      background: rgba(255, 42, 22, 0.05);
-      transform: scale(1.02);
     }
 
     .card strong {
@@ -715,8 +707,6 @@
       padding: 10px;
       border: 1px solid rgba(255, 224, 163, 0.18);
       background: rgba(0,0,0,0.22);
-      display: flex;
-      flex-direction: column;
     }
 
     .register span {
@@ -725,15 +715,11 @@
       font-size: 0.8rem;
     }
 
-    .register input {
+    .register strong {
+      display: block;
       margin-top: 4px;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid var(--border);
       color: var(--green);
-      font-family: inherit;
-      text-align: center;
-      font-weight: bold;
-      cursor: none;
+      font-size: 1.05rem;
     }
 
     .keypad-grid {
@@ -894,7 +880,7 @@
         12px 12px 0 rgba(0,0,0,0.45);
     }
 
-   
+    /* Breakpoint Styles */
     .breakpoint-ctrl {
       display: flex;
       gap: 8px;
@@ -994,8 +980,8 @@
           <div class="load-bar"></div>
         </div>
         <div class="load-number">0%</div>
-      </div
-    </div
+      </div>
+    </div>
   </section>
 
   <main class="app">
@@ -1042,7 +1028,7 @@
               <button class="control-button" type="button" id="pause-vm">Pause</button>
               <button class="control-button" type="button" id="step-vm">Step</button>
               <button class="control-button" type="button" id="reset-vm-main">Reset</button>
-            </div
+            </div>
 
             <label class="speed-row">
               CPU Speed
@@ -1058,7 +1044,7 @@
                 <span>Sound Timer</span>
                 <strong id="st-panel">0</strong>
               </div>
-            </div
+            </div>
 
             <div class="screen" id="screen-preview"></div>
 
@@ -1111,18 +1097,18 @@
         <div class="breakpoint-ctrl">
           <input type="text" id="bp-input" placeholder="e.g. 200">
           <button class="control-button" type="button" id="add-bp">Add BP</button>
-        </div
+        </div>
         <div class="breakpoint-list" id="bp-list"></div>
 
         <h2 style="margin-top:22px;">Keypad</h2>
         <p>Keyboard map: 1 2 3 4 / Q W E R / A S D F / Z X C V.</p>
-        <div class="keypad-grid" id="keypad-grid"></div
+        <div class="keypad-grid" id="keypad-grid"></div>
       </article>
 
       <article class="panel" id="arcade">
         <h2>Arcade</h2>
-        <p>Click a game card to instantly load its demo ROM into the VM.</p>
-        <div class="game-grid" id="game-grid"></div
+        <p>Five Chip-8 games exercise display rendering, keypad input, timers, collision, scoring, and audio.</p>
+        <div class="game-grid" id="game-grid"></div>
       </article>
 
       <article class="panel" id="info">
@@ -1145,7 +1131,7 @@
             <strong>Emulation Culture</strong>
             <p>The small instruction set is useful for learning CPU loops, graphics timing, input, and debugging tools.</p>
           </div>
-        </div
+        </div>
       </article>
 
       <article class="panel" id="settings">
@@ -1161,7 +1147,7 @@
             <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank" rel="noopener noreferrer">Source Code</a>
             <a href="https://vaibhav3129.github.io" target="_blank" rel="noopener noreferrer">Personal Website</a>
           </div>
-        </footer
+        </footer>
       </article>
     </section>
   </main>
@@ -1290,6 +1276,7 @@
       cycle() {
         if (this.waitingForKey !== null) return "waiting";
 
+        // Breakpoint Check
         if (this.breakpoints.has(this.pc)) {
           return "BREAKPOINT_HIT";
         }
@@ -1734,15 +1721,6 @@ SKIP_RESET:
 SPRITE_CORE:
   DB 0xF0, 0x90, 0xF0, 0x90, 0x90`;
 
-   
-    const arcadeRoms = {
-      "BRIX": [0x00E0, 0x6000, 0x05, 0x6100, 0x05, 0x6200, 0x08, 0xA000, 0x250, 0xD068, 0x04, 0x7000, 0x01, 0x1200],
-      "PONG": [0x00E0, 0x6000, 0x05, 0x6100, 0x10, 0x6200, 0x05, 0xA000, 0x260, 0xD068, 0x04, 0x1200],
-      "SPACE INVADERS": [0x00E0, 0x6000, 0x02, 0x6100, 0x02, 0xA000, 0x270, 0xD022, 0x04, 0x1200],
-      "MAZE RUNNER": [0x00E0, 0x6000, 0x01, 0x6100, 0x01, 0xA000, 0x280, 0xD011, 0x04, 0x1200],
-      "TETRIS": [0x00E0, 0x6000, 0x04, 0x6100, 0x04, 0xA000, 0x290, 0xD044, 0x04, 0x1200]
-    };
-
     function loadScratchProgram() {
       const result = assembler.assemble(sampleAssembly);
       chip8.loadProgram(result.bytes);
@@ -1846,7 +1824,8 @@ SPRITE_CORE:
       runLoop = setInterval(() => {
         const cyclesPerFrame = Math.max(1, Math.floor(Number(ui.speedSlider.value) / 60));
         for (let i = 0; i < cyclesPerFrame; i += 1) {
-          if (stepVm(false) === "BREAKPOINT_HIT") break;
+          const res = stepVm(false);
+          if (res === "BREAKPOINT_HIT") break;
         }
         chip8.tickTimers();
         printVm("Running");
@@ -1951,13 +1930,10 @@ SPRITE_CORE:
       }
     }
 
- 
     function renderDebug() {
       const rows = [];
 
-      for (let i = 0; i < 16; i += 1) {
-        rows.push([`V${hex(i, 1)}`, valueText(chip8.v[i], appState.registerFormat)]);
-      }
+      for (let i = 0; i < 16; i += 1) rows.push([`V${hex(i, 1)}`, valueText(chip8.v[i], appState.registerFormat)]);
 
       rows.push(
         ["I", `0x${hex(chip8.i, 3)}`],
@@ -1968,25 +1944,9 @@ SPRITE_CORE:
         ["CY", chip8.cycles]
       );
 
-      ui.debugGrid.innerHTML = rows.map(([label, value]) => {
-        const isVReg = label.startsWith('V');
-        return `<div class="register"><span>${label}</span><input type="text" value="${value}" data-reg="${label}"></div>`;
-      }).join("");
-
-      ui.debugGrid.querySelectorAll("input").forEach(input => {
-        input.onchange = (e) => {
-          const regId = e.target.dataset.reg;
-          const val = parseInt(e.target.value.replace("0x", ""), 16) || 0;
-          
-          if (regId.startsWith('V')) chip8.v[parseInt(regId.slice(1))] = val & 0xFF;
-          else if (regId === "I") chip8.i = val & 0xFFF;
-          else if (regId === "PC") chip8.pc = val & 0xFFF;
-          else if (regId === "DT") chip8.delayTimer = val & 0xFF;
-          else if (regId === "ST") chip8.soundTimer = val & 0xFF;
-          
-          sync();
-        };
-      });
+      ui.debugGrid.innerHTML = rows.map(([label, value]) =>
+        `<div class="register"><span>${label}</span><strong>${value}</strong></div>`
+      ).join("");
     }
 
     function renderKeypad() {
@@ -2018,20 +1978,6 @@ SPRITE_CORE:
         node.querySelector("strong").textContent = title;
         node.querySelector("span").textContent = text;
         if (!withArt) node.querySelector(".game-art").remove();
-        
-        if (withArt) {
-          node.querySelector(".card").onclick = () => {
-            const rom = arcadeRoms[title];
-            if (rom) {
-              pauseVm();
-              chip8.reset();
-              chip8.loadProgram(new Uint8Array(rom));
-              currentProgramName = title;
-              lastLine = `Loaded Arcade ROM: ${title}`;
-              sync();
-            }
-          };
-        }
         target.appendChild(node);
       });
     }
@@ -2143,12 +2089,9 @@ SPRITE_CORE:
       ui.buttons.pause.addEventListener("click", pauseVm);
       ui.buttons.assemble.addEventListener("click", assembleEditor);
       ui.buttons.loadAssembled.addEventListener("click", loadAssembledProgram);
-      
-      ui.asmEditor.addEventListener("input", () => {
-        updateLineNumbers();
-        localStorage.setItem("core8_code", ui.asmEditor.value);
-      });
+      ui.asmEditor.addEventListener("input", updateLineNumbers);
 
+      // Breakpoint Logic
       ui.buttons.addBp.addEventListener("click", () => {
         const addr = parseInt(ui.bpInput.value, 16);
         if (!isNaN(addr)) {
@@ -2158,6 +2101,7 @@ SPRITE_CORE:
         }
       });
 
+  
       ui.buttons.importRom.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -2175,6 +2119,7 @@ SPRITE_CORE:
         reader.readAsArrayBuffer(file);
       });
 
+      
       ui.buttons.exportRom.addEventListener("click", () => {
         const programBytes = chip8.memory.slice(0x200);
         const blob = new Blob([programBytes], { type: "application/octet-stream" });
@@ -2187,9 +2132,7 @@ SPRITE_CORE:
       });
     }
 
-  
-    const savedCode = localStorage.getItem("core8_code");
-    ui.asmEditor.value = savedCode || sampleAssembly;
+    ui.asmEditor.value = sampleAssembly;
     updateLineNumbers();
     buildCards(ui.featureCards, data.features);
     buildCards(ui.gameGrid, data.games, true);
