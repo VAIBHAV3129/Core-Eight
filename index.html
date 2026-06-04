@@ -668,6 +668,7 @@
       grid-template-columns: repeat(16, minmax(38px, 1fr));
       gap: 5px;
       margin-top: 18px;
+      max-width: 700px;
     }
 
     .byte {
@@ -1084,6 +1085,14 @@
       <article class="panel" id="memory">
         <h2>Live Memory Visualizer</h2>
         <p>Memory bytes use separate visual states for the program counter, read history, and breakpoints.</p>
+        
+        <div class="breakpoint-ctrl" style="margin-bottom: 15px;">
+          <span style="color:var(--muted); font-size:0.8rem; align-self:center;">JUMP TO ADDR:</span>
+          <input type="text" id="mem-jump-input" placeholder="e.g. 200">
+          <button class="control-button" type="button" id="mem-jump-btn">Jump</button>
+          <button class="control-button" type="button" id="mem-home-btn">Home (0x200)</button>
+        </div>
+
         <div class="memory-grid" id="memory-grid"></div>
       </article>
 
@@ -1147,7 +1156,7 @@
             <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank" rel="noopener noreferrer">Source Code</a>
             <a href="https://vaibhav3129.github.io" target="_blank" rel="noopener noreferrer">Personal Website</a>
           </div>
-        </footer>
+        </footer}
       </article>
     </section>
   </main>
@@ -1205,10 +1214,13 @@
         loadAssembled: document.querySelector("#load-assembled"),
         exportRom: document.querySelector("#export-rom"),
         importRom: document.querySelector("#import-rom"),
-        addBp: document.querySelector("#add-bp")
+        addBp: document.querySelector("#add-bp"),
+        memJump: document.querySelector("#mem-jump-btn"),
+        memHome: document.querySelector("#mem-home-btn")
       },
       bpInput: document.querySelector("#bp-input"),
-      bpList: document.querySelector("#bp-list")
+      bpList: document.querySelector("#bp-list"),
+      memJumpInput: document.querySelector("#mem-jump-input")
     };
 
     const keyMap = {
@@ -1751,7 +1763,8 @@ SPRITE_CORE:
 
     const appState = {
       memoryFormat: "Hexadecimal",
-      registerFormat: "Hexadecimal"
+      registerFormat: "Hexadecimal",
+      memoryViewOffset: 0x200
     };
 
     function boot() {
@@ -1917,16 +1930,18 @@ SPRITE_CORE:
 
     function renderMemory() {
       const cells = ui.memoryGrid.children;
+      const offset = appState.memoryViewOffset;
 
       for (let i = 0; i < cells.length; i += 1) {
-        const address = 0x200 + i;
+        const address = offset + i;
         const cell = cells[i];
+        const actualAddr = address & 0xFFF;
 
-        cell.textContent = valueText(chip8.memory[address], appState.memoryFormat);
+        cell.textContent = valueText(chip8.memory[actualAddr], appState.memoryFormat);
         cell.className = "byte";
-        if (address === chip8.pc) cell.classList.add("pc");
-        if (address === chip8.pc - 2 || address === chip8.pc - 1) cell.classList.add("read");
-        if (chip8.breakpoints.has(address)) cell.classList.add("breakpoint");
+        if (actualAddr === chip8.pc) cell.classList.add("pc");
+        if (actualAddr === chip8.pc - 2 || actualAddr === chip8.pc - 1) cell.classList.add("read");
+        if (chip8.breakpoints.has(actualAddr)) cell.classList.add("breakpoint");
       }
     }
 
@@ -2045,7 +2060,7 @@ SPRITE_CORE:
 
     function buildStaticGrids() {
       for (let i = 0; i < 64 * 32; i += 1) ui.screen.appendChild(document.createElement("i")).className = "screen-pixel";
-      for (let i = 0; i < 96; i += 1) ui.memoryGrid.appendChild(document.createElement("span")).className = "byte";
+      for (let i = 0; i < 256; i += 1) ui.memoryGrid.appendChild(document.createElement("span")).className = "byte";
 
       keypadLabels.forEach((label, index) => {
         const button = document.createElement("button");
@@ -2101,7 +2116,21 @@ SPRITE_CORE:
         }
       });
 
-  
+      // Memory Navigation
+      ui.buttons.memJump.addEventListener("click", () => {
+        const addr = parseInt(ui.memJumpInput.value, 16);
+        if (!isNaN(addr)) {
+          appState.memoryViewOffset = addr & 0xFFF;
+          sync();
+        }
+      });
+
+      ui.buttons.memHome.addEventListener("click", () => {
+        appState.memoryViewOffset = 0x200;
+        sync();
+      });
+
+      // ROM Import
       ui.buttons.importRom.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -2119,7 +2148,7 @@ SPRITE_CORE:
         reader.readAsArrayBuffer(file);
       });
 
-      
+      // ROM Export
       ui.buttons.exportRom.addEventListener("click", () => {
         const programBytes = chip8.memory.slice(0x200);
         const blob = new Blob([programBytes], { type: "application/octet-stream" });
