@@ -43,12 +43,12 @@
 
     <section class="workspace">
       <article class="panel active" id="dashboard">
-        <h1>CoreEight VM</h1>
-        <p>A simple browser-based Chip-8 lab. Write assembly, step through opcodes, and mess with memory in real-time.</p>
+        <h1 class="panel-title">CoreEight VM</h1>
+        <p class="panel-sub">A simple lab for writing, running, and breaking Chip-8 code.</p>
 
         <div class="dashboard-layout">
           <section class="work-surface">
-            <h2>VM Control</h2>
+            <h2 class="section-label">VM Control</h2>
             <p>Use the transport buttons to run or step the CPU. You can jump to the debugger if things crash.</p>
             
             <div class="transport">
@@ -77,8 +77,10 @@
             <div class="screen" id="screen-preview"></div>
 
             <section class="vm-debug">
-              <h2>Log</h2>
-              <button type="button" id="vm-reset">Reset VM</button>
+              <div class="debug-header">
+                <h2 class="section-label">Execution Timeline</h2>
+                <button type="button" id="log-clear" class="control-button" style="font-size: 0.7rem; padding: 4px 8px;">Clear</button>
+              </div>
               <pre id="vm-log"></pre>
             </section>
           </section>
@@ -87,8 +89,8 @@
       </article>
 
       <article class="panel" id="ide">
-        <h2>Assembler</h2>
-        <p>Write code here, click assemble, then load it. Supports labels and DB for raw bytes.</p>
+        <h2 class="panel-title">Assembler</h2>
+        <p class="panel-sub">Write code here, click assemble, then load it. Supports labels and DB for raw bytes.</p>
         <div class="editor-actions">
           <button class="control-button" type="button" id="assemble-code">Assemble</button>
           <button class="control-button" type="button" id="load-assembled">Load Into VM</button>
@@ -106,53 +108,62 @@
       </article>
 
       <article class="panel" id="memory">
-        <h2>Memory View</h2>
-        <p>Live look at the 4KB RAM. Red highlights indicate breakpoints.</p>
-        <div class="breakpoint-ctrl" style="margin-bottom: 15px;">
-          <span style="color:var(--muted); font-size:0.8rem; align-self:center;">JUMP TO:</span>
-          <input type="text" id="mem-jump-input" placeholder="e.g. 200">
-          <button class="control-button" type="button" id="mem-jump-btn">Jump</button>
-          <button class="control-button" type="button" id="mem-home-btn">Home (0x200)</button>
+        <h2 class="panel-title">Memory View</h2>
+        <p class="panel-sub">Live look at the 4KB RAM. Red highlights indicate breakpoints.</p>
+        
+        <div class="breakpoint-ctrl" style="margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span style="color:var(--muted); font-size:0.8rem;">JUMP:</span>
+            <input type="text" id="mem-jump-input" placeholder="e.g. 200">
+            <button class="control-button" type="button" id="mem-jump-btn">Jump</button>
+            <button class="control-button" type="button" id="mem-home-btn">Home</button>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; margin-left: 24px;">
+            <span style="color:var(--muted); font-size:0.8rem;">VAL:</span>
+            <input type="text" id="mem-val-input" placeholder="0x00">
+            <button class="control-button" type="button" id="mem-write-btn">Write</button>
+          </div>
         </div>
+
         <div class="memory-grid" id="memory-grid"></div>
       </article>
 
       <article class="panel" id="debugger">
-        <h2>Registers</h2>
-        <p>Edit values on the fly while paused.</p>
+        <h2 class="panel-title">Registers</h2>
+        <p class="panel-sub">Edit values on the fly while paused.</p>
         <div class="debug-grid" id="debug-grid"></div>
-        <h2 style="margin-top:22px;">Breakpoints</h2>
+        <h2 class="section-label" style="margin-top:32px;">Breakpoints</h2>
         <div class="breakpoint-ctrl">
           <input type="text" id="bp-input" placeholder="e.g. 200">
           <button class="control-button" type="button" id="add-bp">Add BP</button>
         </div>
         <div class="breakpoint-list" id="bp-list"></div>
-        <h2 style="margin-top:22px;">Keypad</h2>
+        <h2 class="section-label" style="margin-top:32px;">Keypad</h2>
         <div class="keypad-grid" id="keypad-grid"></div>
       </article>
 
       <article class="panel" id="arcade">
-        <h2>Arcade</h2>
+        <h2 class="panel-title">Arcade</h2>
         <div class="game-grid" id="game-grid"></div>
       </article>
 
       <article class="panel" id="info">
-        <h2>About</h2>
-        <p>Chip-8 is a simple interpreted language from the 70s. This project is a study in VM architecture.</p>
+        <h2 class="panel-title">About</h2>
+        <p class="panel-sub">Chip-8 is a simple interpreted language from the 70s. This project is a study in VM architecture.</p>
         <div class="timeline">
           <div class="timeline-item">
-            <strong>1970s</strong>
+            <strong style="color:var(--green)">1970s</strong>
             <p>First appeared on COSMAC VIP.</p>
           </div>
           <div class="timeline-item">
-            <strong>Specs</strong>
+            <strong style="color:var(--green)">Specs</strong>
             <p>4KB RAM, 16 registers, 64x32 mono display.</p>
           </div>
         </div>
       </article>
 
       <article class="panel" id="settings">
-        <h2>Settings</h2>
+        <h2 class="panel-title">Settings</h2>
         <div class="settings-grid" id="settings-grid"></div>
         <footer class="settings-footer">
           <div class="credit-box">MADE BY L K VAIBHAV</div>
