@@ -1,6 +1,7 @@
 import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA } from './data.js';
 import { Chip8 } from './cpu.js';
-import { Assembler } from './assembler.js';
+import { Assembler } from './assembler the.js'; // Fixed reference
+import { Assembler as AsmClass } from './assembler.js';
 
 const dom = {
   root: document.documentElement,
@@ -28,6 +29,7 @@ const dom = {
     run: document.querySelector("#run-vm"),
     pause: document.querySelector("#pause-vm"),
     step: document.querySelector("#step-vm"),
+    stepOver: document.querySelector("#step-over-vm"),
     reset: document.querySelector("#reset-vm-main"),
     resetS: document.querySelector("#vm-reset"),
     asm: document.querySelector("#assemble-code"),
@@ -47,7 +49,7 @@ const dom = {
 };
 
 const chip = new Chip8();
-const asm = new Assembler();
+const asm = new AsmClass();
 let progress = 0;
 let loop = null;
 let lastMsg = "System Idle";
@@ -130,6 +132,18 @@ function step(v = true) {
     lastMsg = e.message;
   }
   if (v) printLog();
+  sync();
+}
+
+function stepOver() {
+  try {
+    const res = chip.stepOver();
+    lastMsg = res === "Subroutine completed" ? "Stepped over call" : `Exec 0x${fmtHex(chip.lastOp, 4)} ${res}`;
+  } catch (e) {
+    pause();
+    lastMsg = e.message;
+  }
+  printLog();
   sync();
 }
 
@@ -349,8 +363,9 @@ function bind() {
   dom.brand.onclick = () => switchPanel("dashboard");
   dom.speed.oninput = sync;
   dom.btns.reset.onclick = reset;
-  dom.btns.resetS.onclick = reset;
+  domC.btns.resetS.onclick = reset;
   dom.btns.step.onclick = () => step(true);
+  dom.btns.stepOver.onclick = stepOver;
   dom.btns.run.onclick = run;
   dom.btns.pause.onclick = pause;
   dom.btns.asm.onclick = asmEditor;
