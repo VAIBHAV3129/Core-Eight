@@ -1,4 +1,3 @@
-
 import { FONT_SET } from './data.js';
 
 export class Chip8 {
@@ -11,6 +10,7 @@ export class Chip8 {
     this.bps = new Set();
     this.waitingForKey = null;
     this.quirks = { shiftUsesVy: false, incrementI: true };
+    this.history = [];
     this.reset();
   }
 
@@ -27,6 +27,7 @@ export class Chip8 {
     this.cycles = 0;
     this.lastOp = 0;
     this.waitingForKey = null;
+    this.history = [];
     this.mem.set(FONT_SET, 0x50);
   }
 
@@ -45,11 +46,24 @@ export class Chip8 {
     if (this.bps.has(this.pc)) return "BREAKPOINT_HIT";
 
     const op = this.fetch();
+    const desc = this.describe(op);
+    const pcBefore = this.pc;
+
     this.lastOp = op;
     this.pc = (this.pc + 2) & 0xFFF;
     this.cycles += 1;
     this.exec(op);
-    return this.describe(op);
+
+    this.history.push({
+      cycle: this.cycles,
+      pc: pcBefore,
+      op: op,
+      desc: desc
+    });
+
+    if (this.history.length > 50) this.history.shift();
+
+    return desc;
   }
 
   exec(op) {
