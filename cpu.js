@@ -66,6 +66,18 @@ export class Chip8 {
     return desc;
   }
 
+  stepOver() {
+    const op = this.fetch();
+    if ((op & 0xF000) !== 0x2000) return this.cycle();
+
+    let safetyLimit = 0;
+    while (this.lastOp !== 0x00EE && safetyLimit < 4096) {
+      this.cycle();
+      safetyLimit++;
+    }
+    return "Subroutine completed";
+  }
+
   exec(op) {
     const x = (op & 0x0F00) >> 8;
     const y = (op & 0x00F0) >> 4;
