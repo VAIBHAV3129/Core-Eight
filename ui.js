@@ -36,25 +36,29 @@ const dom = {
     imp: document.querySelector("#import-rom"),
     addBp: document.querySelector("#add-bp"),
     mjmp: document.querySelector("#mem-jump-btn"),
-    mhome: document.querySelector("#mem-home-btn")
+    mhome: document.querySelector("#mem-home-btn"),
+    mwrite: document.querySelector("#mem-write-btn"),
+    clearLog: document.querySelector("#log-clear")
   },
   bpIn: document.querySelector("#bp-input"),
   bpList: document.querySelector("#bp-list"),
-  mjmpIn: document.querySelector("#mem-jump-input")
+  mjmpIn: document.querySelector("#mem-jump-input"),
+  mvalIn: document.querySelector("#mem-val-input")
 };
 
 const chip = new Chip8();
 const asm = new Assembler();
 let progress = 0;
 let loop = null;
-let lastMsg = "Sytem Idle";
+let lastMsg = "System Idle";
 let romName = "Scratch ROM";
 let bin = null;
 
 const state = {
   memFmt: "Hexadecimal",
   regFmt: "Hexadecimal",
-  memOff: 0x200
+  memOff: 0x200,
+  selAddr: null
 };
 
 function fmtHex(v, w = 2) { return v.toString(16).toUpperCase().padStart(w, "0"); }
@@ -71,7 +75,7 @@ function boot() {
     if (progress >= 100) {
       progress = 100;
       clearInterval(timer);
-      setTimeout(() => dom.body.classList.add("ready"), 250);
+      setTimeout(() => dom.body.classList.add("ready"), 0.3);
     }
     dom.root.style.setProperty("--load", `${progress}%`);
     dom.loadNum.textContent = `${progress}%`;
@@ -159,8 +163,12 @@ function asmEditor() {
 }
 
 function printLog(msg = lastMsg) {
-  dom.log.textContent = `${msg}\n\nPC: 0x${fmtHex(chip.pc, 3)}\nI: 0x${fmtHex(chip.i, 3)}\nCycles: ${chip.cycles}\nDT: ${chip.delayTimer}\nST: ${chip.soundTimer}\n\n` + 
-  Array.from(chip.v).map((v, i) => `V${fmtHex(i, 1)}: ${v}`).join("\n");
+  const historyLines = chip.history.map(entry => 
+    `[${entry.cycle}] 0x${fmtHex(entry.pc, 3)} | 0x${fmtHex(entry.op, 4)} ${entry.desc}`
+  ).join("\n");
+
+  dom.log.textContent = `${msg}\n${"-".repeat(30)}\n${historyLines || "No cycles executed."}`;
+  dom.log.scrollTop = dom.log.scrollHeight;
 }
 
 function sync() {
@@ -200,6 +208,7 @@ function renderMem() {
     if (a === chip.pc) cells[i].classList.add("pc");
     if (a === chip.pc - 2 || a === chip.pc - 1) cells[i].classList.add("read");
     if (chip.bps.has(a)) cells[i].classList.add("breakpoint");
+    if (a === state.selAddr) cells[i].classList.add("selected");
   }
 }
 
@@ -249,7 +258,17 @@ function renderBPs() {
 
 function initGrids() {
   for (let i = 0; i < 64 * 32; i++) dom.screen.appendChild(document.createElement("i")).className = "screen-pixel";
-  for (let i = 0; i < 256; i++) dom.memGrid.appendChild(document.createElement("span")).className = "byte";
+  for (let i = 0; i < 256; i++) {
+    const s = document.createElement("span");
+    s.className = "byte";
+    s.onclick = () => {
+      const a = (state.memOff + Array.from(dom.memGrid.children).indexOf(s)) & 0xFFF;
+      state.selAddr = a;
+      dom.mvalIn.value = valStr(chip.mem[a], "Hexadecimal");
+      sync();
+    };
+    dom.memGrid.appendChild(s);
+  }
   KEYPAD_LABELS.forEach((l, i) => {
     const b = document.createElement("button");
     b.textContent = l;
@@ -352,6 +371,15 @@ function bind() {
 
   dom.btns.mhome.onclick = () => { state.memOff = 0x200; sync(); };
 
+  dom.btns.mwrite.onclick = () => {
+    if (state.selAddr === null) return;
+    let val = dom.mvalIn.value.toLowerCase().startsWith("0x") ? parseInt(dom.mvalIn.value.slice(2), 16) : parseInt(dom.mvalIn.value, 10);
+    if (!isNaN(val)) {
+      chip.mem[state.selAddr] = val & 0xFF;
+      sync();
+    }
+  };
+
   dom.btns.imp.onchange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -377,6 +405,11 @@ function bind() {
     if (e.target.tagName === "INPUT") {
       updateReg(parseInt(e.target.dataset.reg), e.target.value);
     }
+  };
+
+  dom.btns.clearLog.onclick = () => {
+    chip.history = [];
+    sync();
   };
 }
 
