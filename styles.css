@@ -37,7 +37,6 @@ body[data-theme="cyber"] {
 
 * { box-sizing: border-box; }
 
-/* Base Reset */
 html, body {
   margin: 0;
   min-height: 100%;
@@ -77,7 +76,6 @@ button, input, select, textarea, a { font: inherit; cursor: none; }
 a { color: var(--green); text-decoration: none; }
 a:hover { color: #fff; text-shadow: 0 0 12px var(--green); }
 
-/* Boot Sequence */
 .boot-screen {
   position: fixed;
   inset: 0;
@@ -126,14 +124,13 @@ body.ready .boot-screen { opacity: 0; visibility: hidden; }
 }
 
 .boot-content { position: relative; width: min(90vw, 900px); text-align: center; z-index: 3; }
-.title { margin: 0; font-size: clamp(3rem, 11vw, 8rem); line-height: 1; color: #ffd3a3; font-weight: 900; text-shadow: 0 8px 0 #25040 la, 5px 0 0 rgba(255, 42, 22, 0.8), -5px 0 0 rgba(255, 106, 78, 0.5), 0 0 30px rgba(255, 42, 22, 0.7); }
+.title { margin: 0; font-size: clamp(3rem, 11vw, 8rem); line-height: 1; color: #ffd3a3; font-weight: 900; text-shadow: 0 8px 0 #25040a, 5px 0 0 rgba(255, 42, 22, 0.8), -5px 0 0 rgba(255, 106, 78, 0.5), 0 0 30px rgba(255, 42, 22, 0.7); }
 .boot-copy { margin: 32px 0 0; color: #ff9b7a; text-transform: uppercase; letter-spacing: 0.15em; font-size: clamp(0.8rem, 2vw, 1rem); }
 .load-row { display: flex; align-items: center; gap: 16px; width: min(640px, 86vw); margin: 32px auto 0; }
 .load-track { flex: 1; height: 16px; border: 1px solid rgba(255, 72, 44, 0.7); background: rgba(24, 2, 4, 0.8); overflow: hidden; }
 .load-bar { width: var(--load, 0%); height: 100%; background: linear-gradient(90deg, #8f0808, #ff2a16, #ff6042, #ff2a16); box-shadow: 0 0 16px rgba(255, 42, 22, 0.9); transition: width 0.1s linear; }
 .load-number { min-width: 52px; color: #ff8b70; text-align: right; font-weight: 700; }
 
-/* Layout Components */
 .app { position: relative; z-index: 2; min-height: 100vh; padding: 24px; opacity: 0; transform: scale(1.02); transition: opacity 0.3s ease, transform 0.3s ease; }
 body.ready .app { opacity: 1; transform: scale(1); }
 
