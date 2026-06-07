@@ -1,7 +1,6 @@
 import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA } from './data.js';
 import { Chip8 } from './cpu.js';
-import { Assembler } from './assembler the.js'; // Fixed reference
-import { Assembler as AsmClass } from './assembler.js';
+import { Assembler } from './assembler.js';
 
 const dom = {
   root: document.documentElement,
@@ -37,6 +36,7 @@ const dom = {
     exp: document.querySelector("#export-rom"),
     imp: document.querySelector("#import-rom"),
     addBp: document.querySelector("#add-bp"),
+    addWatch: document.querySelector("#add-watch"),
     mjmp: document.querySelector("#mem-jump-btn"),
     mhome: document.querySelector("#mem-home-btn"),
     mwrite: document.querySelector("#mem-write-btn"),
@@ -44,12 +44,14 @@ const dom = {
   },
   bpIn: document.querySelector("#bp-input"),
   bpList: document.querySelector("#bp-list"),
+  watchIn: document.querySelector("#watch-input"),
+  watchList: document.querySelector("#watch-list"),
   mjmpIn: document.querySelector("#mem-jump-input"),
   mvalIn: document.querySelector("#mem-val-input")
 };
 
 const chip = new Chip8();
-const asm = new AsmClass();
+const asm = new Assembler();
 let progress = 0;
 let loop = null;
 let lastMsg = "System Idle";
@@ -124,6 +126,9 @@ function step(v = true) {
     if (dec === "BREAKPOINT_HIT") {
       pause();
       lastMsg = `BP Hit at 0x${fmtHex(chip.pc, 3)}`;
+    } else if (dec === "WATCHPOINT_HIT") {
+      pause();
+      lastMsg = "Watchpoint triggered: Register changed";
     } else {
       lastMsg = dec === "waiting" ? "Waiting for key..." : `Exec 0x${fmtHex(chip.lastOp, 4)} ${dec}`;
     }
@@ -152,7 +157,8 @@ function run() {
   loop = setInterval(() => {
     const perFrame = Math.max(1, Math.floor(Number(dom.speed.value) / 60));
     for (let i = 0; i < perFrame; i++) {
-      if (step(false) === "BREAKPOINT_HIT") break;
+      const res = step(false);
+      if (res === "BREAKPOINT_HIT" || res === "WATCHPOINT_HIT") break;
     }
     chip.tick();
     printLog("Running");
@@ -192,6 +198,7 @@ function sync() {
   renderDebug();
   renderKeys();
   renderBPs();
+  renderWatches();
   dom.timers.dt.textContent = chip.delayTimer;
   dom.timers.st.textContent = chip.soundTimer;
 }
@@ -267,6 +274,17 @@ function renderBPs() {
     c.textContent = `0x${fmtHex(a, 3)} ✕`;
     c.onclick = () => { chip.bps.delete(a); sync(); };
     dom.bpList.appendChild(c);
+  });
+}
+
+function renderWatches() {
+  dom.watchList.innerHTML = "";
+  chip.watchpoints.forEach(idx => {
+    const c = document.createElement("span");
+    c.className = "bp-chip";
+    c.textContent = `V${fmtHex(idx, 1)} ✕`;
+    c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
+    dom.watchList.appendChild(c);
   });
 }
 
@@ -363,7 +381,7 @@ function bind() {
   dom.brand.onclick = () => switchPanel("dashboard");
   dom.speed.oninput = sync;
   dom.btns.reset.onclick = reset;
-  domC.btns.resetS.onclick = reset;
+  dom.btns.resetS.onclick = reset;
   dom.btns.step.onclick = () => step(true);
   dom.btns.stepOver.onclick = stepOver;
   dom.btns.run.onclick = run;
@@ -377,6 +395,16 @@ function bind() {
   dom.btns.addBp.onclick = () => {
     const a = parseInt(dom.bpIn.value, 16);
     if (!isNaN(a)) { chip.bps.add(a); dom.bpIn.value = ""; sync(); }
+  };
+
+  dom.btns.addWatch.onclick = () => {
+    const val = dom.watchIn.value.toUpperCase();
+    if (val.startsWith("V") && /^[0-9A-F]$/.test(val[1])) {
+      const idx = parseInt(val[1], 16);
+      chip.watchpoints.add(idx);
+      dom.watchIn.value = "";
+      sync();
+    }
   };
 
   dom.btns.mjmp.onclick = () => {
