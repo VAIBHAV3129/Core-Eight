@@ -30,7 +30,6 @@ const dom = {
     step: document.querySelector("#step-vm"),
     stepOver: document.querySelector("#step-over-vm"),
     reset: document.querySelector("#reset-vm-main"),
-    resetS: document.querySelector("#vm-reset"),
     asm: document.querySelector("#assemble-code"),
     load: document.querySelector("#load-assembled"),
     exp: document.querySelector("#export-rom"),
@@ -83,11 +82,92 @@ function boot() {
     if (progress >= 100) {
       progress = 100;
       clearInterval(timer);
-      setTimeout(() => dom.body.classList.add("ready"), 0.3);
+      setTimeout(() => {
+        dom.body.classList.add("ready");
+        init();
+      }, 300);
     }
     dom.root.style.setProperty("--load", `${progress}%`);
     dom.loadNum.textContent = `${progress}%`;
   }, 100);
+}
+
+function init() {
+  initScreen();
+  initUI();
+  loadScratch();
+  sync();
+}
+
+function initScreen() {
+  dom.screen.innerHTML = "";
+  for (let i = 0; i < 64 * 32; i++) {
+    const p = document.createElement("div");
+    p.className = "screen-pixel";
+    dom.screen.appendChild(p);
+  }
+}
+
+function initUI() {
+  dom.navBtns.forEach(b => b.onclick = () => switchPanel(b.dataset.panel));
+  
+  dom.btns.run.onclick = run;
+  dom.btns.pause.onclick = pause;
+  dom.btns.step.onclick = () => step(true);
+  dom.btns.stepOver.onclick = stepOver;
+  dom.btns.reset.onclick = reset;
+  dom.btns.asm.onclick = asmEditor;
+  dom.btns.load.onclick = loadAsm;
+  dom.btns.clearLog.onclick = () => { chip.history = []; printLog("Log cleared"); };
+  dom.btns.closeInspector.onclick = () => dom.inspector.classList.remove("active");
+
+  dom.btns.addBp.onclick = () => {
+    const a = parseInt(dom.bpIn.value, 16);
+    if (!isNaN(a)) { chip.bps.add(a); dom.bpIn.value = ""; sync(); }
+  };
+
+  dom.btns.addWatch.onclick = () => {
+    const v = dom.watchIn.value.toUpperCase();
+    if (v.startsWith("V") && v.length === 2) {
+      chip.watchpoints.add(parseInt(v.slice(1), 16));
+      dom.watchIn.value = "";
+      sync();
+    }
+  };
+
+  dom.btns.mjmp.onclick = () => {
+    const a = parseInt(dom.mjmpIn.value, 16);
+    if (!isNaN(a)) { state.memOff = a & 0xFFF; sync(); }
+  };
+
+  dom.btns.mhome.onclick = () => { state.memOff = 0x200; sync(); };
+
+  dom.btns.mwrite.onclick = () => {
+    const a = state.selAddr;
+    const v = parseInt(dom.mvalIn.value, 16);
+    if (a !== null && !isNaN(v)) { chip.mem[a] = v & 0xFF; sync(); }
+  };
+
+  dom.editor.oninput = () => {
+    const lines = dom.editor.value.split("\n");
+    dom.lines.innerHTML = lines.map((_, i) => i + 1).join("<br>");
+  };
+
+  window.onkeydown = (e) => {
+    const key = KEY_MAP[e.key] || KEY_MAP[e.key.toLowerCase()];
+    if (key !== undefined) chip.setKey(key, true);
+  };
+  window.onkeyup = (e) => {
+    const key = KEY_MAP[e.key] || KEY_MAP[e.key.toLowerCase()];
+    if (key !== undefined) chip.setKey(key, false);
+  };
+
+  dom.body.onmousemove = (e) => {
+    dom.cursor.style.left = e.clientX + "px";
+    dom.cursor.style.top = e.clientY + "px";
+  };
+
+  dom.editor.oninput();
 }
 
 function switchPanel(id) {
@@ -133,8 +213,10 @@ function step(v = true) {
     } else if (dec === "WATCHPOINT_HIT") {
       pause();
       lastMsg = "Watchpoint triggered: Register changed";
+    } else if (dec === "waiting") {
+      lastMsg = "Waiting for key...";
     } else {
-      lastMsg = dec === lawaiting ? "Waiting for key..." : `Exec 0x${fmtHex(chip.lastOp, 4)} ${dec}`;
+      lastMsg = `Exec 0x${fmtHex(chip.lastOp, 4)} ${dec}`;
     }
   } catch (e) {
     pause();
@@ -205,7 +287,7 @@ function showInspector(entry) {
   const bits = details.binary.split("");
   
   let bitHtml = `<div class="bit-grid">`;
-  bits.forEach(b => `<div class="bit-cell ${b==='1'?'active':''}">${b}</div>`);
+  bits.forEach(b => { bitHtml += `<div class="bit-cell ${b==='1'?'active':''}">${b}</div>`; });
   bitHtml += `</div>`;
 
   dom.inspectorBody.innerHTML = `
@@ -245,7 +327,8 @@ function renderStatus() {
     ["PC", `0x${fmtHex(chip.pc, 3)}`],
     ["Op", `0x${fmtHex(chip.lastOp, 4)}`]
   ];
-  dom.status.innerHTML = rows.map(([l, v]) => `<div class="status-item"><span class="status-label">${l}</span><span class="status-value">${v}</span></div>`).join("");
+  dom.status.innerHTML = rows.map(([l, v]) => `<div class="status-item"><span 
+class="status-label">${l}</span><span class="status-value">${v}</span></div>`).join("");
 }
 
 function renderScreen() {
@@ -255,6 +338,14 @@ function renderScreen() {
 
 function renderMem() {
   const cells = dom.memGrid.children;
+  if (cells.length === 0) {
+    for (let i = 0; i < 256; i++) {
+      const b = document.createElement("div");
+      b.className = "byte";
+      b.onclick = () => { state.selAddr = (state.memOff + i) & 0xFFF; sync(); };
+      dom.memGrid.appendChild(b);
+    }
+  }
   const off = state.memOff;
   for (let i = 0; i < cells.length; i++) {
     const a = (off + i) & 0xFFF;
@@ -278,6 +369,9 @@ function renderDebug() {
         <input type="text" data-reg="${i}" value="${valStr(regs[i], state.regFmt)}">
       </div>
     `).join("");
+    dom.degGrid.querySelectorAll("input").forEach(inp => {
+      inp.onchange = (e) => updateReg(parseInt(e.target.dataset.reg), e.target.value);
+    });
   } else {
     Array.from(dom.degGrid.querySelectorAll("input")).forEach((inp, i) => {
       inp.value = valStr(regs[i], state.regFmt);
@@ -297,6 +391,9 @@ function updateReg(idx, val) {
 }
 
 function renderKeys() {
+  if (dom.keyGrid.children.length === 0) {
+    dom.keyGrid.innerHTML = KEYPAD_LABELS.map(l => `<button type="button">${l}</button>`).join("");
+  }
   Array.from(dom.keyGrid.children).forEach((b, i) => b.classList.toggle("down", chip.keys[i] === 1));
 }
 
@@ -316,4 +413,14 @@ function renderWatches() {
   chip.watchpoints.forEach(idx => {
     const c = document.createElement("span");
     c.className = "bp-chip";
-    c.textContent
+    c.textContent = `V${fmtHex(idx, 1)} ✕`;
+    c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
+    dom.watchList.appendChild(c);
+  });
+}
+
+function renderStack() {
+  dom.stackView.innerHTML = chip.stack.map((a, i) => `<div class="stack-item">${fmtHex(a, 3)}</div>`).join("");
+}
+
+boot();
