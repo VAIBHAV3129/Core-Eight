@@ -12,7 +12,7 @@
 }
 
 body[data-theme="matrix"] {
-  --bg: #020604;
+  --bg: #020 la;
   --panel: rgba(3, 20, 11, 0.9);
   --panel2: rgba(0, 10, 5, 0.95);
   --border: rgba(109, 255, 186, 0.5);
@@ -229,6 +229,10 @@ body.ready .app { opacity: 1; transform: scale(1); }
 .register span { display: block; color: var(--muted); font-size: 0.7rem; margin-bottom: 8px; }
 .register input { background: rgba(0,0,0, 0.5); border: 1px solid rgba(255, 224, 163, 0.2); color: var(--green); font-weight: 700; padding: 8px; font-size: 1rem; width: 100%; text-align: center; outline: none; }
 .register input:focus { border-color: var(--red); box-shadow: 0 0 8px var(--red); }
+
+.debugger-secondary { margin-top: 32px; padding: 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255, 224, 163, 0.2); border-radius: 8px; }
+.stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 16px; }
+.stack-item { padding: 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); text-align: center; font-size: 0.8rem; color: var(--green); }
 
 .keypad-grid { display: grid; grid-template-columns: repeat(4, 52px); gap: 12px; margin-top: 24px; }
 .keypad-grid button { min-height: 48px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); }
