@@ -12,7 +12,7 @@
 }
 
 body[data-theme="matrix"] {
-  --bg: #020 la;
+  --bg: #020604;
   --panel: rgba(3, 20, 11, 0.9);
   --panel2: rgba(0, 10, 5, 0.95);
   --border: rgba(109, 255, 186, 0.5);
@@ -211,6 +211,9 @@ body.ready .app { opacity: 1; transform: scale(1); }
   line-height: 1.5;
 }
 
+.log-entry { cursor: pointer; transition: background 0.2s; }
+.log-entry:hover { background: rgba(255, 42, 22, 0.15); color: #fff; }
+
 .editor-shell { display: grid; grid-template-columns: auto 1fr; min-height: 360px; overflow: hidden; margin-top: 24px; border: 1px solid rgba(255, 224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
 .line-numbers { padding: 16px 12px; color: var(--muted); border-right: 1px solid rgba(255, 224, 163, 0.2); background: rgba(0,0,0,0.3); text-align: right; line-height: 1.65; user-select: none; min-width: 48px; }
 .code-area { width: 100%; min-height: 360px; margin: 0; padding: 16px; border: 0; outline: 0; resize: vertical; color: var(--text); background: transparent; font-size: var(--editor-size); line-height: 1.65; white-space: pre; tab-size: 2; }
@@ -265,6 +268,17 @@ body.ready .app { opacity: 1; transform: scale(1); }
 .breakpoint-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .bp-chip { padding: 4px 8px; border: 1px solid var(--red); background: rgba(255, 42, 22, 0.1); color: var(--red); font-size: 0.7rem; cursor: pointer; }
 .bp-chip:hover { background: var(--red); color: #fff; }
+
+.inspector-hidden { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: none; place-items: center; }
+.inspector-hidden.active { display: grid; }
+.inspector-content { background: var(--panel2); border: 2px solid var(--green); padding: 32px; width: min(600px, 90vw); border-radius: 8px; box-shadow: 0 0 40px var(--green); }
+.inspector-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.bit-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin: 16px 0; text-align: center; }
+.bit-cell { font-size: 0.7rem; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); }
+.bit-cell.active { color: var(--green); border-color: var(--green); }
+.detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255, 224, 163, 0.1); }
+.detail-row span { color: var(--muted); }
+.detail-row strong { color: var(--green); }
 
 @media (max-width: 1050px) {
   .topbar { grid-template-columns: 1fr; }
