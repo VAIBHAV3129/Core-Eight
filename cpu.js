@@ -170,7 +170,6 @@ export class Chip8 {
     const startX = this.v[xReg] % 64;
     const startY = this.v[yReg] % 32;
     this.v[0xF] = 0;
-
     for (let row = 0; row < height; row++) {
       const byte = this.mem[this.i + row];
       for (let bit = 0; bit < 8; bit++) {
@@ -195,6 +194,21 @@ export class Chip8 {
   tick() {
     if (this.delayTimer > 0) this.delayTimer -= 1;
     if (this.soundTimer > 0) this.soundTimer -= 1;
+  }
+
+  getOpcodeDetails(op) {
+    const x = (op & 0x0F00) >> 8;
+    const y = (op & 0x00F0) >> 4;
+    const n = op & 0x000F;
+    const nn = op & 0x00FF;
+    const nnn = op & 0x0FFF;
+    const binary = op.toString(2).padStart(16, '0');
+
+    return {
+      binary,
+      masks: { x, y, n, nn, nnn },
+      desc: this.describe(op)
+    };
   }
 
   describe(op = this.lastOp) {
