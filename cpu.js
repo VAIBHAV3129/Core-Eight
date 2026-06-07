@@ -8,6 +8,8 @@ export class Chip8 {
     this.keys = new Uint8Array(16);
     this.stack = [];
     this.bps = new Set();
+    this.watchpoints = new Set();
+    this.prevV = new Uint8Array(16);
     this.waitingForKey = null;
     this.quirks = { shiftUsesVy: false, incrementI: true };
     this.history = [];
@@ -28,6 +30,7 @@ export class Chip8 {
     this.lastOp = 0;
     this.waitingForKey = null;
     this.history = [];
+    this.prevV.fill(0);
     this.mem.set(FONT_SET, 0x50);
   }
 
@@ -54,6 +57,8 @@ export class Chip8 {
     this.cycles += 1;
     this.exec(op);
 
+    if (this.checkWatches()) return "WATCHPOINT_HIT";
+
     this.history.push({
       cycle: this.cycles,
       pc: pcBefore,
@@ -66,14 +71,25 @@ export class Chip8 {
     return desc;
   }
 
+  checkWatches() {
+    for (let i = 0; i < 16; i++) {
+      if (this.watchpoints.has(i) && this.v[i] !== this.prevV[i]) {
+        this.prevV.set(this.v);
+        return true;
+      }
+    }
+    this.prevV.set(this.v);
+    return false;
+  }
+
   stepOver() {
     const op = this.fetch();
     if ((op & 0xF000) !== 0x2000) return this.cycle();
 
-    let safetyLimit = 0;
-    while (this.lastOp !== 0x00EE && safetyLimit < 4096) {
-      this.cycle();
-      safetyLimit++;
+    let limit = 0;
+    while (this.lastOp !== 0x00EE && limit < 4096) {
+      if (this.cycle() === "BREAKPOINT_HIT") return "BP HIT during Step-Over";
+      limit++;
     }
     return "Subroutine completed";
   }
