@@ -133,12 +133,21 @@
         <h2 class="panel-title">Registers</h2>
         <p class="panel-sub">Edit values on the fly while paused.</p>
         <div class="debug-grid" id="debug-grid"></div>
+        
+        <h2 class="section-label" style="margin-top:32px;">Watchpoints</h2>
+        <div class="breakpoint-ctrl">
+          <input type="text" id="watch-input" placeholder="e.g. V0">
+          <button class="control-button" type="button" id="add-watch">Add Watch</button>
+        </div>
+        <div class="breakpoint-list" id="watch-list"></div>
+
         <h2 class="section-label" style="margin-top:32px;">Breakpoints</h2>
         <div class="breakpoint-ctrl">
           <input type="text" id="bp-input" placeholder="e.g. 200">
           <button class="control-button" type="button" id="add-bp">Add BP</button>
         </div>
         <div class="breakpoint-list" id="bp-list"></div>
+        
         <h2 class="section-label" style="margin-top:32px;">Keypad</h2>
         <div class="keypad-grid" id="keypad-grid"></div>
       </article>
