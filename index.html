@@ -146,7 +146,7 @@
         </div>
         <div class="breakpoint-list" id="watch-list"></div>
 
-        <h2 class la="section-label" style="margin-top:32px;">Breakpoints</h2>
+        <h2 class="section-label" style="margin-top:32px;">Breakpoints</h2>
         <div class="breakpoint-ctrl">
           <input type="text" id="bp-input" placeholder="e.g. 200">
           <button class="control-button" type="button" id="add-bp">Add BP</button>
@@ -192,6 +192,16 @@
   </main>
 
   <div class="custom-cursor hand" id="custom-cursor"></div>
+
+  <div id="op-inspector" class="inspector-hidden">
+    <div class="inspector-content">
+      <div class="inspector-header">
+        <h3 class="section-label">Opcode Analysis</h3>
+        <button id="close-inspector" class="control-button">✕</button>
+      </div>
+      <div id="inspector-body"></div>
+    </div>
+  </div>
 
   <template id="card-template">
     <section class="card">
