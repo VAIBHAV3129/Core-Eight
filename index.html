@@ -134,6 +134,11 @@
         <p class="panel-sub">Edit values on the fly while paused.</p>
         <div class="debug-grid" id="debug-grid"></div>
         
+        <div class="debugger-secondary">
+          <h2 class="section-label">Stack Inspection</h2>
+          <div id="stack-view" class="stack-grid"></div>
+        </div>
+
         <h2 class="section-label" style="margin-top:32px;">Watchpoints</h2>
         <div class="breakpoint-ctrl">
           <input type="text" id="watch-input" placeholder="e.g. V0">
@@ -141,7 +146,7 @@
         </div>
         <div class="breakpoint-list" id="watch-list"></div>
 
-        <h2 class="section-label" style="margin-top:32px;">Breakpoints</h2>
+        <h2 class la="section-label" style="margin-top:32px;">Breakpoints</h2>
         <div class="breakpoint-ctrl">
           <input type="text" id="bp-input" placeholder="e.g. 200">
           <button class="control-button" type="button" id="add-bp">Add BP</button>
