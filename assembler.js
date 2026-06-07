@@ -100,7 +100,8 @@ export class Assembler {
     }
     if (op === "RND") return 0xC000 | (this.reg(parts[1], line) << 8) | this.byte(parts[2], line);
     if (op === "DRW") {
-      return 0xD000 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4) | (this.num(parts[3], line) & 0xF);
+      return 0xD000 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4) | (this.num(parts[3], 
+line) & 0xF);
     }
     if (op === "SKP") return 0xE09E | (this.reg(parts[1], line) << 8);
     if (op === "SKNP") return 0xE0A1 | (this.reg(parts[1], line) << 8);
