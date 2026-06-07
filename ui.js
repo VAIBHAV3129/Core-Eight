@@ -40,14 +40,18 @@ const dom = {
     mjmp: document.querySelector("#mem-jump-btn"),
     mhome: document.querySelector("#mem-home-btn"),
     mwrite: document.querySelector("#mem-write-btn"),
-    clearLog: document.querySelector("#log-clear")
+    clearLog: document.querySelector("#log-clear"),
+    closeInspector: document.querySelector("#close-inspector")
   },
   bpIn: document.querySelector("#bp-input"),
   bpList: document.querySelector("#bp-list"),
   watchIn: document.querySelector("#watch-input"),
   watchList: document.querySelector("#watch-list"),
   mjmpIn: document.querySelector("#mem-jump-input"),
-  mvalIn: document.querySelector("#mem-val-input")
+  mvalIn: document.querySelector("#mem-val-input"),
+  stackView: document.querySelector("#stack-view"),
+  inspector: document.querySelector("#op-inspector"),
+  inspectorBody: document.querySelector("#inspector-body")
 };
 
 const chip = new Chip8();
@@ -130,7 +134,7 @@ function step(v = true) {
       pause();
       lastMsg = "Watchpoint triggered: Register changed";
     } else {
-      lastMsg = dec === "waiting" ? "Waiting for key..." : `Exec 0x${fmtHex(chip.lastOp, 4)} ${dec}`;
+      lastMsg = dec === lawaiting ? "Waiting for key..." : `Exec 0x${fmtHex(chip.lastOp, 4)} ${dec}`;
     }
   } catch (e) {
     pause();
@@ -183,12 +187,41 @@ function asmEditor() {
 }
 
 function printLog(msg = lastMsg) {
-  const historyLines = chip.history.map(entry => 
-    `[${entry.cycle}] 0x${fmtHex(entry.pc, 3)} | 0x${fmtHex(entry.op, 4)} ${entry.desc}`
-  ).join("\n");
-
-  dom.log.textContent = `${msg}\n${"-".repeat(30)}\n${historyLines || "No cycles executed."}`;
+  dom.log.innerHTML = "";
+  dom.log.textContent = `${msg}\n${"-".repeat(30)}\n`;
+  
+  chip.history.forEach(entry => {
+    const line = document.createElement("div");
+    line.className = "log-entry";
+    line.textContent = `[${entry.cycle}] 0x${fmtHex(entry.pc, 3)} | 0x${fmtHex(entry.op, 4)} ${entry.desc}`;
+    line.onclick = () => showInspector(entry);
+    dom.log.appendChild(line);
+  });
   dom.log.scrollTop = dom.log.scrollHeight;
+}
+
+function showInspector(entry) {
+  const details = chip.getOpcodeDetails(entry.op);
+  const bits = details.binary.split("");
+  
+  let bitHtml = `<div class="bit-grid">`;
+  bits.forEach(b => `<div class="bit-cell ${b==='1'?'active':''}">${b}</div>`);
+  bitHtml += `</div>`;
+
+  dom.inspectorBody.innerHTML = `
+    <div class="detail-row"><span>Opcode</span><strong>0x${fmtHex(entry.op, 4)}</strong></div>
+    <div class="detail-row"><span>Instruction</span><strong>${details.desc}</strong></div>
+    <div class="detail-row"><span>PC</span><strong>0x${fmtHex(entry.pc, 3)}</strong></div>
+    <div class="detail-row"><span>Cycle</span><strong>${entry.cycle}</strong></div>
+    <div style="margin-top:16px;" class="section-label">Bit Breakdown</div>
+    ${bitHtml}
+    <div class="detail-row"><span>X (Nibble 2)</span><strong>${details.masks.x}</strong></div>
+    <div class="detail-row"><span>Y (Nibble 3)</span><strong>${details.masks.y}</strong></div>
+    <div class="detail-row"><span>N (Nibble 4)</span><strong>${details.masks.n}</strong></div>
+    <div class="detail-row"><span>NN (Byte 2)</span><strong>0x${fmtHex(details.masks.nn, 2)}</strong></div>
+    <div class="detail-row"><span>NNN (Address)</span><strong>0x${fmtHex(details.masks.nnn, 3)}</strong></div>
+  `;
+  dom.inspector.classList.add("active");
 }
 
 function sync() {
@@ -199,6 +232,7 @@ function sync() {
   renderKeys();
   renderBPs();
   renderWatches();
+  renderStack();
   dom.timers.dt.textContent = chip.delayTimer;
   dom.timers.st.textContent = chip.soundTimer;
 }
@@ -282,187 +316,4 @@ function renderWatches() {
   chip.watchpoints.forEach(idx => {
     const c = document.createElement("span");
     c.className = "bp-chip";
-    c.textContent = `V${fmtHex(idx, 1)} ✕`;
-    c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
-    dom.watchList.appendChild(c);
-  });
-}
-
-function initGrids() {
-  for (let i = 0; i < 64 * 32; i++) dom.screen.appendChild(document.createElement("i")).className = "screen-pixel";
-  for (let i = 0; i < 256; i++) {
-    const s = document.createElement("span");
-    s.className = "byte";
-    s.onclick = () => {
-      const a = (state.memOff + Array.from(dom.memGrid.children).indexOf(s)) & 0xFFF;
-      state.selAddr = a;
-      dom.mvalIn.value = valStr(chip.mem[a], "Hexadecimal");
-      sync();
-    };
-    dom.memGrid.appendChild(s);
-  }
-  KEYPAD_LABELS.forEach((l, i) => {
-    const b = document.createElement("button");
-    b.textContent = l;
-    b.onpointerdown = () => { chip.setKey(i, true); sync(); };
-    b.onpointerup = () => { chip.setKey(i, false); sync(); };
-    dom.keyGrid.appendChild(b);
-  });
-}
-
-function buildCards(target, rows, art = false) {
-  const temp = document.querySelector("#card-template");
-  target.innerHTML = "";
-  rows.forEach(([t, x]) => {
-    const n = temp.content.cloneNode(true);
-    n.querySelector("strong").textContent = t;
-    n.querySelector("span").textContent = x;
-    if (!art) n.querySelector(".game-art").remove();
-    target.appendChild(n);
-  });
-}
-
-function initSettings() {
-  const temp = document.querySelector("#setting-template");
-  SETTINGS_DATA.forEach(([l, h, k, opts]) => {
-    const n = temp.content.cloneNode(true);
-    n.querySelector("span").innerHTML = `${l} <small>${h}</small>`;
-    const sel = n.querySelector("select");
-    sel.dataset.setting = k;
-    opts.forEach(o => {
-      const opt = document.createElement("option");
-      opt.value = o; opt.textContent = o;
-      sel.appendChild(opt);
-    });
-    dom.setGrid.appendChild(n);
-  });
-  
-  const pix = document.createElement("label");
-  pix.className = "setting-row";
-  pix.innerHTML = `<span>Pixel Effect <small>Hard edges.</small></span><input id="pixel-toggle" type="checkbox" checked>`;
-  dom.setGrid.appendChild(pix);
-
-  const font = document.createElement("label");
-  font.className = "setting-row";
-  font.innerHTML = `<span>Editor Size <small>Text size.</small></span><input id="editor-size" type="range" min="13" max="20" value="15">`;
-  dom.setGrid.appendChild(font);
-
-  dom.setGrid.onchange = (e) => {
-    const k = e.target.dataset.setting;
-    if (!k) return;
-    if (k === "theme") {
-      const map = { "Amber Cathode": "amber", "Matrix Terminal": "matrix", "Cyber-Whacker": "cyber" };
-      dom.body.dataset.theme = map[e.target.value];
-    } else if (k === "cursor") {
-      const map = { "Retro Hand": "hand", "Crosshair": "crosshair", "Pixel Pointer": "pixel", "System Cursor": "system" };
-      dom.cursor.className = `custom-cursor ${map[e.target.value]}`;
-      dom.body.classList.toggle("system-cursor", e.target.value === "System Cursor");
-    } else if (k === "memoryFormat") state.memFmt = e.target.value;
-    else if (k === "registerFormat") state.regFmt = e.target.value;
-    sync();
-  };
-  
-  dom.setGrid.querySelector("#pixel-toggle").onchange = (e) => dom.body.classList.toggle("pixelated", e.target.checked);
-  dom.setGrid.querySelector("#editor-size").oninput = (e) => dom.root.style.setProperty("--editor-size", `${e.target.value}px`);
-}
-
-function bind() {
-  window.onpointermove = (e) => dom.cursor.style.transform = `translate(${e.clientX - 3}px, ${e.clientY - 3}px)`;
-  window.onkeydown = (e) => {
-    const k = KEY_MAP[e.key.toLowerCase()];
-    if (k !== undefined) { chip.setKey(k, true); sync(); }
-  };
-  window.onkeyup = (e) => {
-    const k = KEY_MAP[e.key.toLowerCase()];
-    if (k !== undefined) { chip.setKey(k, false); sync(); }
-  };
-
-  dom.navBtns.forEach(b => b.onclick = () => switchPanel(b.dataset.panel));
-  dom.brand.onclick = () => switchPanel("dashboard");
-  dom.speed.oninput = sync;
-  dom.btns.reset.onclick = reset;
-  dom.btns.resetS.onclick = reset;
-  dom.btns.step.onclick = () => step(true);
-  dom.btns.stepOver.onclick = stepOver;
-  dom.btns.run.onclick = run;
-  dom.btns.pause.onclick = pause;
-  dom.btns.asm.onclick = asmEditor;
-  dom.btns.load.onclick = loadAsm;
-  dom.editor.oninput = () => {
-    dom.lines.innerHTML = Array.from({ length: dom.editor.value.split("\n").length }, (_, i) => i + 1).join("<br>");
-  };
-
-  dom.btns.addBp.onclick = () => {
-    const a = parseInt(dom.bpIn.value, 16);
-    if (!isNaN(a)) { chip.bps.add(a); dom.bpIn.value = ""; sync(); }
-  };
-
-  dom.btns.addWatch.onclick = () => {
-    const val = dom.watchIn.value.toUpperCase();
-    if (val.startsWith("V") && /^[0-9A-F]$/.test(val[1])) {
-      const idx = parseInt(val[1], 16);
-      chip.watchpoints.add(idx);
-      dom.watchIn.value = "";
-      sync();
-    }
-  };
-
-  dom.btns.mjmp.onclick = () => {
-    const a = parseInt(dom.mjmpIn.value, 16);
-    if (!isNaN(a)) { state.memOff = a & 0xFFF; sync(); }
-  };
-
-  dom.btns.mhome.onclick = () => { state.memOff = 0x200; sync(); };
-
-  dom.btns.mwrite.onclick = () => {
-    if (state.selAddr === null) return;
-    let val = dom.mvalIn.value.toLowerCase().startsWith("0x") ? parseInt(dom.mvalIn.value.slice(2), 16) : parseInt(dom.mvalIn.value, 10);
-    if (!isNaN(val)) {
-      chip.mem[state.selAddr] = val & 0xFF;
-      sync();
-    }
-  };
-
-  dom.btns.imp.onchange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = (ev) => {
-      const b = new Uint8Array(ev.target.result);
-      pause(); chip.reset(); chip.load(b);
-      romName = f.name; lastMsg = `Imported ${f.name}`;
-      printLog(); sync();
-    };
-    r.readAsArrayBuffer(f);
-  };
-
-  dom.btns.exp.onclick = () => {
-    const b = chip.mem.slice(0x200);
-    const blob = new Blob([b], { type: "application/octet-stream" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "program.ch8"; a.click();
-  };
-
-  dom.degGrid.onchange = (e) => {
-    if (e.target.tagName === "INPUT") {
-      updateReg(parseInt(e.target.dataset.reg), e.target.value);
-    }
-  };
-
-  dom.btns.clearLog.onclick = () => {
-    chip.history = [];
-    sync();
-  };
-}
-
-dom.editor.value = DEFAULT_ASM;
-dom.lines.innerHTML = Array.from({ length: DEFAULT_ASM.split("\n").length }, (_, i) => i + 1).join("<br>");
-buildCards(dom.featCards, FEATURE_DATA);
-buildCards(dom.gameGrid, GAME_DATA, true);
-initSettings();
-initGrids();
-bind();
-reset();
-asmEditor();
-boot();
+    c.textContent
