@@ -76,6 +76,13 @@ function valStr(v, fmt, w = 2) {
   return `0x${fmtHex(v, w)}`;
 }
 
+function setupImmediate() {
+  dom.body.onmousemove = (e) => {
+    dom.cursor.style.left = e.clientX + "px";
+    dom.cursor.style.top = e.clientY + "px";
+  };
+}
+
 function boot() {
   const timer = setInterval(() => {
     progress += 5;
@@ -118,6 +125,9 @@ function initUI() {
   dom.btns.reset.onclick = reset;
   dom.btns.asm.onclick = asmEditor;
   dom.btns.load.onclick = loadAsm;
+  dom.btns.exp.onclick = exportRom;
+  dom.btns.imp.onclick = () => dom.btns.imp.click();
+  dom.btns.imp.onchange = importRom;
   dom.btns.clearLog.onclick = () => { chip.history = []; printLog("Log cleared"); };
   dom.btns.closeInspector.onclick = () => dom.inspector.classList.remove("active");
 
@@ -162,11 +172,6 @@ function initUI() {
     if (key !== undefined) chip.setKey(key, false);
   };
 
-  dom.body.onmousemove = (e) => {
-    dom.cursor.style.left = e.clientX + "px";
-    dom.cursor.style.top = e.clientY + "px";
-  };
-
   dom.editor.oninput();
 }
 
@@ -194,7 +199,7 @@ function loadScratch() {
 }
 
 function loadAsm() {
-  if (!bin) asmEditor();
+  asmEditor();
   if (!bin) return;
   pause();
   chip.reset();
@@ -202,6 +207,38 @@ function loadAsm() {
   romName = "Assembled ROM";
   lastMsg = "Code loaded";
   sync();
+}
+
+function exportRom() {
+  if (!bin) {
+    alert("Please assemble a program first.");
+    return;
+  }
+  const blob = new Blob([bin], { type: "application/octet-stream" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "program.ch8";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importRom(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const bytes = new Uint8Array(reader.result);
+    bin = bytes;
+    pause();
+    chip.reset();
+    chip.load(bytes);
+    romName = file.name;
+    lastMsg = `Imported ${file.name}`;
+    sync();
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function step(v = true) {
@@ -327,8 +364,7 @@ function renderStatus() {
     ["PC", `0x${fmtHex(chip.pc, 3)}`],
     ["Op", `0x${fmtHex(chip.lastOp, 4)}`]
   ];
-  dom.status.innerHTML = rows.map(([l, v]) => `<div class="status-item"><span 
-class="status-label">${l}</span><span class="status-value">${v}</span></div>`).join("");
+  dom.status.innerHTML = rows.map(([l, v]) => `<div class="status-item"><span class="status-label">${l}</span><span class="status-value">${v}</span></div>`).join("");
 }
 
 function renderScreen() {
@@ -423,4 +459,5 @@ function renderStack() {
   dom.stackView.innerHTML = chip.stack.map((a, i) => `<div class="stack-item">${fmtHex(a, 3)}</div>`).join("");
 }
 
+setupImmediate();
 boot();
