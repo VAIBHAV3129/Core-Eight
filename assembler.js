@@ -62,7 +62,7 @@ export class Assembler {
     if (colon === -1) return line.text;
     const label = line.text.slice(0, colon).trim();
     if (!/^[A-Z_][A-Z0-9_]*$/i.test(label)) {
-      this.errors.push(`Line ${line.line}: bad label ${label}`);
+      this.errors.push(`Line ${line.line}: Invalid label name "${label}"`);
       return "";
     }
     this.labels[label.toUpperCase()] = pc;
@@ -100,12 +100,11 @@ export class Assembler {
     }
     if (op === "RND") return 0xC000 | (this.reg(parts[1], line) << 8) | this.byte(parts[2], line);
     if (op === "DRW") {
-      return 0xD000 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4) | (this.num(parts[3], 
-line) & 0xF);
+      return 0xD000 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4) | (this.num(parts[3], line) & 0xF);
     }
     if (op === "SKP") return 0xE09E | (this.reg(parts[1], line) << 8);
     if (op === "SKNP") return 0xE0A1 | (this.reg(parts[1], line) << 8);
-    this.errors.push(`Line ${line.line}: unknown ${text}`);
+    this.errors.push(`Line ${line.line}: Unknown instruction "${op}"`);
     return null;
   }
 
@@ -132,7 +131,7 @@ line) & 0xF);
     if (a === "F") return 0xF029 | (this.reg(parts[2], line) << 8);
     if (a === "B") return 0xF033 | (this.reg(parts[2], line) << 8);
     if (a === "[I]") return 0xF055 | (this.reg(parts[2], line) << 8);
-    this.errors.push(`Line ${line.line}: bad LD`);
+    this.errors.push(`Line ${line.line}: Invalid LD parameters`);
     return null;
   }
 
@@ -150,27 +149,27 @@ line) & 0xF);
 
   isReg(val) { return /^V[0-9A-F]$/i.test(val || ""); }
   reg(val, line) {
-    if (!this.isReg(val)) { this.errors.push(`Line ${line.line}: bad reg ${val}`); return 0; }
+    if (!this.isReg(val)) { this.errors.push(`Line ${line.line}: Invalid register "${val}". Expected V0-VF`); return 0; }
     return parseInt(val.slice(1), 16);
   }
   byte(val, line) {
     const n = this.num(val, line);
-    if (n < 0 || n > 0xFF) this.errors.push(`Line ${line.line}: range ${val}`);
+    if (n < 0 || n > 0xFF) this.errors.push(`Line ${line.line}: Value ${val} out of 8-bit range (0-255)`);
     return n & 0xFF;
   }
   addr(val, line) {
     const n = this.num(val, line);
-    if (n < 0 || n > 0xFFF) this.errors.push(`Line ${line.line}: addr range ${val}`);
+    if (n < 0 || n > 0xFFF) this.errors.push(`Line ${line.line}: Address ${val} out of 12-bit range (0-4095)`);
     return n & 0xFFF;
   }
   num(val, line) {
-    if (!val) { this.errors.push(`Line ${line.line}: empty value`); return 0; }
+    if (!val) { this.errors.push(`Line ${line.line}: Missing value`); return 0; }
     const k = val.toUpperCase();
     if (this.labels[k] !== undefined) return this.labels[k];
     if (/^0X[0-9A-F]+$/i.test(val)) return parseInt(val, 16);
     if (/^\$[0-9A-F]+$/i.test(val)) return parseInt(val.slice(1), 16);
     if (/^[0-9]+$/.test(val)) return parseInt(val, 10);
-    this.errors.push(`Line ${line.line}: unknown ${val}`);
+    this.errors.push(`Line ${line.line}: Unknown numeric format "${val}"`);
     return 0;
   }
 }
