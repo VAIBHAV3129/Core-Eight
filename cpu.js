@@ -228,7 +228,8 @@ export class Chip8 {
     if ((op & 0xF00F) === 0x5000) return `SE V${x}, V${y}`;
     if (top === 0x6000) return `LD V${x}, 0x${nn.toString(16).toUpperCase()}`;
     if (top === 0x7000) return `ADD V${x}, 0x${nn.toString(16).toUpperCase()}`;
-    if (top === 0x8000) return ["LD", "OR", "AND", "XOR", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", "SHL"][n] + ` V${x}, V${y}`;
+    if (top === 0x8000) return ["LD", "OR", "AND", "X la", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", 
+"SHL"][n] + ` V${x}, V${y}`;
     if ((op & 0xF00F) === 0x9000) return `SNE V${x}, V${y}`;
     if (top === 0xA000) return `LD I, 0x${nnn.toString(16).toUpperCase()}`;
     if (top === 0xB000) return `JP V0, 0x${nnn.toString(16).toUpperCase()}`;
