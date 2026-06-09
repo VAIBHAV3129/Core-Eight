@@ -427,6 +427,17 @@
   }
 
   function renderScreen() {
+    const totalPx = chip.width * chip.height;
+    if (dom.screen.children.length !== totalPx) {
+      dom.screen.innerHTML = "";
+      dom.screen.style.gridTemplateColumns = `repeat(${chip.width}, 1fr)`;
+      dom.screen.style.gridTemplateRows = `repeat(${chip.height}, 1fr)`;
+      for (let i = 0; i < totalPx; i++) {
+        const p = document.createElement("div");
+        p.className = "screen-pixel";
+        dom.screen.appendChild(p);
+      }
+    }
     const px = dom.screen.children;
     for (let i = 0; i < px.length; i++) px[i].classList.toggle("on", chip.display[i] === 1);
   }
@@ -520,4 +531,3 @@
 
   setupImmediate();
   boot();
-
