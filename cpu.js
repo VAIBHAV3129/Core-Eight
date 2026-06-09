@@ -4,13 +4,16 @@
     constructor() {
       this.mem = new Uint8Array(4096);
       this.v = new Uint8Array(16);
-      this.display = new Uint8Array(64 * 32);
+      this.width = 64;
+      this.height = 32;
+      this.display = new Uint8Array(128 * 64);
       this.keys = new Uint8Array(16);
       this.stack = [];
       this.bps = new Set();
       this.watchpoints = new Set();
       this.prevV = new Uint8Array(16);
       this.waitingForKey = null;
+      this.halted = false;
       this.quirks = { shiftUsesVy: false, incrementI: true };
       this.history = [];
       this.reset();
@@ -19,6 +22,8 @@
     reset() {
       this.mem.fill(0);
       this.v.fill(0);
+      this.width = 64;
+      this.height = 32;
       this.display.fill(0);
       this.keys.fill(0);
       this.stack = [];
@@ -29,6 +34,7 @@
       this.cycles = 0;
       this.lastOp = 0;
       this.waitingForKey = null;
+      this.halted = false;
       this.history = [];
       this.prevV.fill(0);
       this.mem.set(FONT_SET, 0x50);
@@ -45,6 +51,7 @@
     }
 
     cycle() {
+      if (this.halted) return "HALTED";
       if (this.waitingForKey !== null) return "waiting";
       if (this.bps.has(this.pc)) return "BREAKPOINT_HIT";
 
@@ -103,6 +110,11 @@
 
       if (op === 0x00E0) this.display.fill(0);
       else if (op === 0x00EE) this.pc = this.stack.pop() ?? 0x200;
+      else if (op === 0x00C0) { this.halted = true; }
+      else if (op === 0x00C2) { this.halted = true; this.waitingForKey = 'PRESS'; }
+      else if (op === 0x00C4) { this.halted = true; this.waitingForKey = 'RELEASE'; }
+      else if (op === 0x00C6) { this.width = 128; this.height = 64; }
+      else if (op === 0x00C8) { this.width = 64; this.height = 32; }
       else if ((op & 0xF000) === 0x1000) this.pc = nnn;
       else if ((op & 0xF000) === 0x2000) { this.stack.push(this.pc); this.pc = nnn; }
       else if ((op & 0xF000) === 0x3000) { if (this.v[x] === nn) this.pc += 2; }
@@ -167,16 +179,16 @@
     }
 
     draw(xReg, yReg, height) {
-      const startX = this.v[xReg] % 64;
-      const startY = this.v[yReg] % 32;
+      const startX = this.v[xReg] % this.width;
+      const startY = this.v[yReg] % this.height;
       this.v[0xF] = 0;
       for (let row = 0; row < height; row++) {
         const byte = this.mem[this.i + row];
         for (let bit = 0; bit < 8; bit++) {
           if ((byte & (0x80 >> bit)) === 0) continue;
-          const x = (startX + bit) % 64;
-          const y = (startY + row) % 32;
-          const idx = y * 64 + x;
+          const x = (startX + bit) % this.width;
+          const y = (startY + row) % this.height;
+          const idx = y * this.width + x;
           if (this.display[idx]) this.v[0xF] = 1;
           this.display[idx] ^= 1;
         }
@@ -185,9 +197,24 @@
 
     setKey(key, pressed) {
       this.keys[key] = pressed ? 1 : 0;
-      if (pressed && this.waitingForKey !== null) {
-        this.v[this.waitingForKey] = key;
-        this.waitingForKey = null;
+
+      if (this.halted) {
+        if (this.waitingForKey === 'PRESS' && pressed) {
+          this.halted = false;
+          this.waitingForKey = null;
+        } else if (this.waitingForKey === 'RELEASE' && !pressed) {
+          this.halted = false;
+          this.waitingForKey = null;
+        } else if (this.waitingForKey === null && pressed) {
+          this.halted = false;
+        }
+      }
+
+      if (this.waitingForKey !== null && this.waitingForKey !== 'PRESS' && this.waitingForKey !== 'RELEASE') {
+        if (pressed) {
+          this.v[this.waitingForKey] = key;
+          this.waitingForKey = null;
+        }
       }
     }
 
@@ -221,6 +248,11 @@
 
       if (op === 0x00E0) return "CLS";
       if (op === 0x00EE) return "RET";
+      if (op === 0x00C0) return "HLT_K";
+      if (op === 0x00C2) return "HLT_P";
+      if (op === 0x00C4) return "HLT_R";
+      if (op === 0x00C6) return "HIRES";
+      if (op === 0x00C8) return "LORES";
       if (top === 0x1000) return `JP 0x${nnn.toString(16).toUpperCase()}`;
       if (top === 0x2000) return `CALL 0x${nnn.toString(16).toUpperCase()}`;
       if (top === 0x3000) return `SE V${x}, 0x${nn.toString(16).toUpperCase()}`;
@@ -249,5 +281,3 @@
       return `0x${op.toString(16).toUpperCase()}`;
     }
   }
-
- 
