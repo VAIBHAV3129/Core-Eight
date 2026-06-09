@@ -1,226 +1,225 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CoreEight | Dev Lab</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body data-theme="amber" class="pixelated">
+ <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreEight | Dev Lab</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body data-theme="amber" class="pixelated">
 
-  <section class="boot-screen">
-    <div class="pixel-grid"></div>
-    <div class="noise"></div>
-    <div class="boot-content">
-      <h1 class="title">CoreEight</h1>
-      <p class="boot-copy">Loading system core...</p>
-      <div class="load-row">
-        <div class="load-track"><div class="load-bar"></div></div>
-        <div class="load-number">0%</div>
+    <section class="boot-screen">
+      <div class="pixel-grid"></div>
+      <div class="noise"></div>
+      <div class="boot-content">
+        <h1 class="title">CoreEight</h1>
+        <p class="boot-copy">Loading system core...</p>
+        <div class="load-row">
+          <div class="load-track"><div class="load-bar"></div></div>
+          <div class="load-number">0%</div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <main class="app">
-    <header class="topbar">
-      <button class="brand" type="button" data-panel="dashboard">
-        <span class="core">Core</span>
-        <span class="eight">Eight</span>
-      </button>
-      <div class="credit-box">MADE BY L K VAIBHAV</div>
-      <nav class="nav">
-        <button class="active" type="button" data-panel="dashboard">Dashboard</button>
-        <button type="button" data-panel="ide">IDE</button>
-        <button type="button" data-panel="memory">Memory</button>
-        <button type="button" data-panel="debugger">Debugger</button>
-        <button type="button" data-panel="arcade">Arcade</button>
-        <button type="button" data-panel="info">Info</button>
-        <button type="button" data-panel="settings">Settings</button>
-      </nav>
-    </header>
+    <main class="app">
+      <header class="topbar">
+        <button class="brand" type="button" data-panel="dashboard">
+          <span class="core">Core</span>
+          <span class="eight">Eight</span>
+        </button>
+        <div class="credit-box">MADE BY L K VAIBHAV</div>
+        <nav class="nav">
+          <button class="active" type="button" data-panel="dashboard">Dashboard</button>
+          <button type="button" data-panel="ide">IDE</button>
+          <button type="button" data-panel="memory">Memory</button>
+          <button type="button" data-panel="debugger">Debugger</button>
+          <button type="button" data-panel="arcade">Arcade</button>
+          <button type="button" data-panel="info">Info</button>
+          <button type="button" data-panel="settings">Settings</button>
+        </nav>
+      </header>
 
-    <section class="statusbar" id="statusbar"></section>
+      <section class="statusbar" id="statusbar"></section>
 
-    <section class="workspace">
-      <article class="panel active" id="dashboard">
-        <h1 class="panel-title">CoreEight VM</h1>
-        <p class="panel-sub">A simple lab for writing, running, and breaking Chip-8 code.</p>
+      <section class="workspace">
+        <article class="panel active" id="dashboard">
+          <h1 class="panel-title">CoreEight VM</h1>
+          <p class="panel-sub">A simple lab for writing, running, and breaking Chip-8 code.</p>
 
-        <div class="dashboard-layout">
-          <section class="work-surface">
-            <h2 class="section-label">VM Control</h2>
-            <p>Use the transport buttons to run or step the CPU. You can jump to the debugger if things crash.</p>
-            
-            <div class="transport">
-              <button class="control-button" type="button" id="run-vm">Run</button>
-              <button class="control-button" type="button" id="pause-vm">Pause</button>
-              <button class="control-button" type="button" id="step-vm">Step</button>
-              <button class="control-button" type="button" id="step-over-vm">Step Over</button>
-              <button class="control-button" type="button" id="reset-vm-main">Reset</button>
-            </div>
+          <div class="dashboard-layout">
+            <section class="work-surface">
+              <h2 class="section-label">VM Control</h2>
+              <p>Use the transport buttons to run or step the CPU. You can jump to the debugger if things crash.</p>
 
-            <label class="speed-row">
-              CPU Speed
-              <input id="speed-slider" type="range" min="500" max="2000" value="700">
-            </label>
-
-            <div class="timer-strip">
-              <div class="timer-box">
-                <span>Delay Timer</span>
-                <strong id="dt-panel">0</strong>
+              <div class="transport">
+                <button class="control-button" type="button" id="run-vm">Run</button>
+                <button class="control-button" type="button" id="pause-vm">Pause</button>
+                <button class="control-button" type="button" id="step-vm">Step</button>
+                <button class="control-button" type="button" id="step-over-vm">Step Over</button>
+                <button class="control-button" type="button" id="reset-vm-main">Reset</button>
               </div>
-              <div class="timer-box">
-                <span>Sound Timer</span>
-                <strong id="st-panel">0</strong>
-              </div>
-            </div>
 
-            <div class="screen" id="screen-preview"></div>
+              <label class="speed-row">
+                CPU Speed
+                <input id="speed-slider" type="range" min="500" max="2000" value="700">
+              </label>
 
-            <section class="vm-debug">
-              <div class="debug-header">
-                <h2 class="section-label">Execution Timeline</h2>
-                <button type="button" id="log-clear" class="control-button" style="font-size: 0.7rem; padding: 4px 
-8px;">Clear</button>
+              <div class="timer-strip">
+                <div class="timer-box">
+                  <span>Delay Timer</span>
+                  <strong id="dt-panel">0</strong>
+                </div>
+                <div class="timer-box">
+                  <span>Sound Timer</span>
+                  <strong id="st-panel">0</strong>
+                </div>
               </div>
-              <pre id="vm-log"></pre>
+
+              <div class="screen" id="screen-preview"></div>
+
+              <section class="vm-debug">
+                <div class="debug-header">
+                  <h2 class="section-label">Execution Timeline</h2>
+                  <button type="button" id="log-clear" class="control-button" style="font-size: 0.7rem; padding: 4px 
+  8px;">Clear</button>
+                </div>
+                <pre id="vm-log"></pre>
+              </section>
             </section>
-          </section>
-          <section class="card-grid" id="feature-cards"></section>
-        </div>
-      </article>
-
-      <article class="panel" id="ide">
-        <h2 class="panel-title">Assembler</h2>
-        <p class="panel-sub">Write code here, click assemble, then load it. Supports labels and DB for raw 
-bytes.</p>
-        <div class="editor-actions">
-          <button class="control-button" type="button" id="assemble-code">Assemble</button>
-          <button class="control-button" type="button" id="load-assembled">Load Into VM</button>
-          <button class="control-button" type="button" id="export-rom">Export ROM</button>
-          <label class="control-button">
-            Import ROM
-            <input type="file" id="import-rom" style="display:none" accept=".ch8,.bin">
-          </label>
-        </div>
-        <div class="editor-shell">
-          <div class="line-numbers" id="asm-lines"></div>
-          <textarea class="code-area" id="asm-editor" spellcheck="false"></textarea>
-        </div>
-        <div class="terminal" id="asm-terminal">Assembler ready</div>
-      </article>
-
-      <article class="panel" id="memory">
-        <h2 class="panel-title">Memory View</h2>
-        <p class="panel-sub">Live look at the 4KB RAM. Red highlights indicate breakpoints.</p>
-        
-        <div class="breakpoint-ctrl" style="margin-bottom: 16px; flex-wrap: wrap;">
-          <div style="display:flex; gap:8px; align-items:center;">
-            <span style="color:var(--muted); font-size:0.8rem;">JUMP:</span>
-            <input type="text" id="mem-jump-input" placeholder="e.g. 200">
-            <button class="control-button" type="button" id="mem-jump-btn">Jump</button>
-            <button class="control-button" type="button" id="mem-home-btn">Home</button>
+            <section class="card-grid" id="feature-cards"></section>
           </div>
-          <div style="display:flex; gap:8px; align-items:center; margin-left: 24px;">
-            <span style="color:var(--muted); font-size:0.8rem;">VAL:</span>
-            <input type="text" id="mem-val-input" placeholder="0x00">
-            <button class="control-button" type="button" id="mem-write-btn">Write</button>
+        </article>
+
+        <article class="panel" id="ide">
+          <h2 class="panel-title">Assembler</h2>
+          <p class="panel-sub">Write code here, click assemble, then load it. Supports labels and DB for raw bytes.</p>
+          <div class="editor-actions">
+            <button class="control-button" type="button" id="assemble-code">Assemble</button>
+            <button class="control-button" type="button" id="load-assembled">Load Into VM</button>
+            <button class="control-button" type="button" id="export-rom">Export ROM</button>
+            <label class="control-button">
+              Import ROM
+              <input type="file" id="import-rom" style="display:none" accept=".ch8,.bin">
+            </label>
           </div>
-        </div>
-
-        <div class="memory-grid" id="memory-grid"></div>
-      </article>
-
-      <article class="panel" id="debugger">
-        <h2 class="panel-title">Registers</h2>
-        <p class="panel-sub">Edit values on the fly while paused.</p>
-        <div class="debug-grid" id="debug-grid"></div>
-        
-        <div class="debugger-secondary">
-          <h2 class="section-label">Stack Inspection</h2>
-          <div id="stack-view" class="stack-grid"></div>
-        </div>
-
-        <h2 class="section-label" style="margin-top:32px;">Watchpoints</h2>
-        <div class="breakpoint-ctrl">
-          <input type="text" id="watch-input" placeholder="e.g. V0">
-          <button class="control-button" type="button" id="add-watch">Add Watch</button>
-        </div>
-        <div class="breakpoint-list" id="watch-list"></div>
-
-        <h2 class="section-label" style="margin-top:32px;">Breakpoints</h2>
-        <div class="breakpoint-ctrl">
-          <input type="text" id="bp-input" placeholder="e.g. 200">
-          <button class="control-button" type="button" id="add-bp">Add BP</button>
-        </div>
-        <div class="breakpoint-list" id="bp-list"></div>
-        
-        <h2 class="section-label" style="margin-top:32px;">Keypad</h2>
-        <div class="keypad-grid" id="keypad-grid"></div>
-      </article>
-
-      <article class="panel" id="arcade">
-        <h2 class="panel-title">Arcade</h2>
-        <div class="game-grid" id="game-grid"></div>
-      </article>
-
-      <article class="panel" id="info">
-        <h2 class="panel-title">About</h2>
-        <p class="panel-sub">Chip-8 is a simple interpreted language from the 70s. This project is a study in VM 
-architecture.</p>
-        <div class="timeline">
-          <div class="timeline-item">
-            <strong style="color:var(--green)">1970s</strong>
-            <p>First appeared on COSMAC VIP.</p>
+          <div class="editor-shell">
+            <div class="line-numbers" id="asm-lines"></div>
+            <textarea class="code-area" id="asm-editor" spellcheck="false"></textarea>
           </div>
-          <div class="timeline-item">
-            <strong style="color:var(--green)">Specs</strong>
-            <p>4KB RAM, 16 registers, 64x32 mono display.</p>
+          <div class="terminal" id="asm-terminal">Assembler ready</div>
+        </article>
+
+        <article class="panel" id="memory">
+          <h2 class="panel-title">Memory View</h2>
+          <p class="panel-sub">Live look at the 4KB RAM. Red highlights indicate breakpoints.</p>
+
+          <div class="breakpoint-ctrl" style="margin-bottom: 16px; flex-wrap: wrap;">
+            <div style="display:flex; gap:8px; align-items:center;">
+              <span style="color:var(--muted); font-size:0.8rem;">JUMP:</span>
+              <input type="text" id="mem-jump-input" placeholder="e.g. 200">
+              <button class="control-button" type="button" id="mem-jump-btn">Jump</button>
+              <button class="control-button" type="button" id="mem-home-btn">Home</button>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; margin-left: 24px;">
+              <span style="color:var(--muted); font-size:0.8rem;">VAL:</span>
+              <input type="text" id="mem-val-input" placeholder="0x00">
+              <button class="control-button" type="button" id="mem-write-btn">Write</button>
+            </div>
           </div>
+
+          <div class="memory-grid" id="memory-grid"></div>
+        </article>
+
+        <article class="panel" id="debugger">
+          <h2 class="panel-title">Registers</h2>
+          <p class="panel-sub">Edit values on the fly while paused.</p>
+          <div class="debug-grid" id="debug-grid"></div>
+
+          <div class="debugger-secondary">
+            <h2 class="section-label">Stack Inspection</h2>
+            <div id="stack-view" class="stack-grid"></div>
+          </div>
+
+          <h2 class="section-label" style="margin-top:32px;">Watchpoints</h2>
+          <div class="breakpoint-ctrl">
+            <input type="text" id="watch-input" placeholder="e.g. V0">
+            <button class="control-button" type="button" id="add-watch">Add Watch</button>
+          </div>
+          <div class="breakpoint-list" id="watch-list"></div>
+
+          <h2 class="section-label" style="margin-top:32px;">Breakpoints</h2>
+          <div class="breakpoint-ctrl">
+            <input type="text" id="bp-input" placeholder="e.g. 200">
+            <button class="control-button" type="button" id="add-bp">Add BP</button>
+          </div>
+          <div class="breakpoint-list" id="bp-list"></div>
+
+          <h2 class="section-label" style="margin-top:32px;">Keypad</h2>
+          <div class="keypad-grid" id="keypad-grid"></div>
+        </article>
+
+        <article class="panel" id="arcade">
+          <h2 class="panel-title">Arcade</h2>
+          <div class="game-grid" id="game-grid"></div>
+        </article>
+
+        <article class="panel" id="info">
+          <h2 class="panel-title">About</h2>
+          <p class="panel-sub">Chip-8 is a simple interpreted language from the 70s. This project is a study in VM
+  architecture.</p>
+          <div class="timeline">
+            <div class="timeline-item">
+              <strong style="color:var(--green)">1970s</strong>
+              <p>First appeared on COSMAC VIP.</p>
+            </div>
+            <div class="timeline-item">
+              <strong style="color:var(--green)">Specs</strong>
+              <p>4KB RAM, 16 registers, 64x32 mono display.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel" id="settings">
+          <h2 class="panel-title">Settings</h2>
+          <div class="settings-grid" id="settings-grid"></div>
+          <footer class="settings-footer">
+            <div class="credit-box">MADE BY L K VAIBHAV</div>
+            <div class="source-links">
+              <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank">GitHub</a>
+              <a href="https://vaibhav3129.github.io" target="_blank">Portfolio</a>
+            </div>
+          </footer}
+        </article>
+      </section>
+    </main>
+
+    <div class="custom-cursor hand" id="custom-cursor"></div>
+
+    <div id="op-inspector" class="inspector-hidden">
+      <div class="inspector-content">
+        <div class="inspector-header">
+          <h3 class="section-label">Opcode Analysis</h3>
+          <button id="close-inspector" class="control-button">✕</button>
         </div>
-      </article>
-
-      <article class="panel" id="settings">
-        <h2 class="panel-title">Settings</h2>
-        <div class="settings-grid" id="settings-grid"></div>
-        <footer class="settings-footer">
-          <div class="credit-box">MADE BY L K VAIBHAV</div>
-          <div class="source-links">
-            <a href="https://github.com/VAIBHAV3129/Core-Eight" target="_blank">GitHub</a>
-            <a href="https://vaibhav3129.github.io" target="_blank">Portfolio</a>
-          </div>
-        </footer}
-      </article>
-    </section>
-  </main>
-
-  <div class="custom-cursor hand" id="custom-cursor"></div>
-
-  <div id="op-inspector" class="inspector-hidden">
-    <div class="inspector-content">
-      <div class="inspector-header">
-        <h3 class="section-label">Opcode Analysis</h3>
-        <button id="close-inspector" class="control-button">✕</button>
+        <div id="inspector-body"></div>
       </div>
-      <div id="inspector-body"></div>
     </div>
-  </div>
 
-  <template id="card-template">
-    <section class="card">
-      <div class="game-art"></div>
-      <strong></strong>
-      <span></span>
-    </section>
-  </template>
+    <template id="card-template">
+      <section class="card">
+        <div class="game-art"></div>
+        <strong></strong>
+        <span></span
+      </section>
+    </template>
 
-  <template id="setting-template">
-    <label class="setting-row">
-      <span></span>
-      <select></select>
-    </label>
-  </template>
+    <template id="setting-template">
+      <label class="setting-row">
+        <span></span>
+        <select></select>
+      </label>
+    </template>
 
-  <script type="module" src="ui.js"></script>
-</body>
-</html>
+    <script type="module" src="ui.js"></script>
+  </body>
+  </html>
