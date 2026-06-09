@@ -1,4 +1,4 @@
- export class Assembler {
+  export class Assembler {
     constructor(origin = 0x200) {
       this.origin = origin;
     }
