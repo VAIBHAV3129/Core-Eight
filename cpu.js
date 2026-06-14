@@ -40,6 +40,11 @@ export class Chip8 {
     this.mem.set(FONT_SET, 0x50);
   }
 
+  setQuirk(key, value) {
+    if (key === 'shiftQuirk') this.quirks.shiftUsesVy = (value === "On");
+    if (key === 'incIQuirk') this.quirks.incrementI = (value === "On");
+  }
+
   load(bytes, start = 0x200) {
     this.mem.fill(0, start, start + bytes.length);
     this.mem.set(bytes, start);
