@@ -121,6 +121,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
 
   function initUI() {
     dom.navBtns.forEach(b => b.onclick = () => switchPanel(b.dataset.panel));
+    dom.brand.onclick = () => switchPanel(dom.brand.dataset.panel);
 
     dom.btns.run.onclick = run;
     dom.btns.pause.onclick = pause;
