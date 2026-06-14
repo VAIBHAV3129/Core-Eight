@@ -57,6 +57,8 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
   const asm = new Assembler();
   let progress = 0;
   let loop = null;
+  let lastTime = 0;
+  let cycleRemainder = 0;
   let lastMsg = "System Idle";
   let romName = "Scratch ROM";
   let bin = null;
@@ -279,21 +281,41 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
 
   function run() {
     if (loop) return;
-    loop = setInterval(() => {
-      const perFrame = Math.max(1, Math.floor(Number(dom.speed.value) / 60));
-      for (let i = 0; i < perFrame; i++) {
+    
+    const tick = (time) => {
+      if (!lastTime) lastTime = time;
+      const dt = (time - lastTime) / 1000;
+      lastTime = time;
+
+      const hz = Number(dom.speed.value);
+      let cyclesToRun = hz * dt + cycleRemainder;
+      const actualRun = Math.floor(cyclesToRun);
+      cycleRemainder = cyclesToRun - actualRun;
+
+      for (let i = 0; i < actualRun; i++) {
         const res = step(false);
-        if (res === "BREAKPOINT_HIT" || res === "WATCHPOINT_HIT") break;
+        if (res === "BREAKPOINT_HIT" || res === "WATCHPOINT_HIT") {
+          pause();
+          break;
+        }
       }
+
       chip.tick();
       printLog("Running");
       sync();
-    }, 1000 / 60);
+      loop = requestAnimationFrame(tick);
+    };
+
+    lastTime = 0;
+    cycleRemainder = 0;
+    loop = requestAnimationFrame(tick);
   }
 
   function pause() {
-    if (loop) clearInterval(loop);
+    if (loop) cancelAnimationFrame(loop);
     loop = null;
+    lastTime = 0;
+    cycleRemainder = 0;
   }
 
   function asmEditor() {
