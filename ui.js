@@ -1,4 +1,4 @@
- import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA } from './data.js';
+import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA } from './data.js';
   import { Chip8 } from './cpu.js';
   import { Assembler } from './assembler.js';
 
@@ -397,6 +397,10 @@
         break;
       case 'pixelated':
         dom.body.classList.toggle('pixelated', value === "On");
+        break;
+      case 'shiftQuirk':
+      case 'incIQuirk':
+        chip.setQuirk(key, value);
         break;
     }
   }
