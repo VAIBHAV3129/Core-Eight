@@ -63,3 +63,24 @@ export const SETTINGS_DATA = [
   ["Shift Quirk", "SHR/SHL use Vy.", "shiftQuirk", ["Off", "On"]],
   ["IncI Quirk", "LD [I], Vx increments I.", "incIQuirk", ["Off", "On"]]
 ];
+
+export const TEST_SUITE = [
+  {
+    name: "Addition V0+V1",
+    bin: new Uint8Array([0x60, 0x0A, 0x61, 0x14, 0x80, 0x10]),
+    cycles: 3,
+    expected: { "V0": 24 }
+  },
+  {
+    name: "Jump to 0x300",
+    bin: new Uint8Array([0x13, 0x00]),
+    cycles: 1,
+    expected: { "PC": 0x300 }
+  },
+  {
+    name: "I-Register Load",
+    bin: new Uint8Array([0xA0, 0x04, 0x50]),
+    cycles: 1,
+    expected: { "I": 0x450 }
+  }
+];
