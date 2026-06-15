@@ -1,4 +1,4 @@
-import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA } from './data.js';
+import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA, TEST_SUITE } from './data.js';
   import { Chip8 } from './cpu.js';
   import { Assembler } from './assembler.js';
 
@@ -244,6 +244,25 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
       sync();
     };
     reader.readAsArrayBuffer(file);
+  }
+
+  function runSystemTests() {
+    pause();
+    let passedCount = 0;
+    const results = TEST_SUITE.map(test => {
+      const res = chip.testRunner(test);
+      if (res.passed) passedCount++;
+      return `${test.name}: ${res.passed ? "PASS" : "FAIL " + res.failures.join(", ")}`;
+    });
+    
+    printLog(`Verification Complete: ${passedCount}/${TEST_SUITE.length} Passed`);
+    results.forEach(line => {
+      const entry = document.createElement("div");
+      entry.className = "log-entry";
+      entry.textContent = line;
+      dom.log.appendChild(entry);
+    });
+    sync();
   }
 
   function step(v = true) {
