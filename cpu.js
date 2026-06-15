@@ -118,8 +118,8 @@ export class Chip8 {
     else if (op === 0x00C0) { this.halted = true; }
     else if (op === 0x00C2) { this.halted = true; this.waitingForKey = 'PRESS'; }
     else if (op === 0x00C4) { this.halted = true; this.waitingForKey = 'RELEASE'; }
-    else if (op === 0x00C6) { this.width = 128; this.height = 64; }
-    else if (op === 0x00C8) { this.width = 64; this.height = 32; }
+    else if (op === 0x00C6) { this.width = 128; this.height = 64; this.display.fill(0); }
+    else if (op === 0x00C8) { this.width = 64; this.height = 32; this.display.fill(0); }
     else if (op === 0x00CD) { this.halted = true; this.waitingForKey = 'ANY_PRESS'; }
     else if (op === 0x00CF) { this.halted = true; this.waitingForKey = 'ANY_RELEASE'; }
     else if ((op & 0xF000) === 0x1000) this.pc = nnn;
@@ -145,14 +145,14 @@ export class Chip8 {
     else if ((op & 0xF0FF) === 0xF029) this.i = 0x50 + (this.v[x] & 0xF) * 5;
     else if ((op & 0xF0FF) === 0xF033) {
       const val = this.v[x];
-      this.mem[this.i] = Math.floor(val / 100);
-      this.mem[this.i + 1] = Math.floor((val % 100) / 10);
-      this.mem[this.i + 2] = val % 10;
+      this.mem[this.i & 0xFFF] = Math.floor(val / 100);
+      this.mem[(this.i + 1) & 0xFFF] = Math.floor((val % 100) / 10);
+      this.mem[(this.i + 2) & 0xFFF] = val % 10;
     } else if ((op & 0xF0FF) === 0xF055) {
-      for (let idx = 0; idx <= x; idx++) this.mem[this.i + idx] = this.v[idx];
+      for (let idx = 0; idx <= x; idx++) this.mem[(this.i + idx) & 0xFFF] = this.v[idx];
       if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFF;
     } else if ((op & 0xF0FF) === 0xF065) {
-      for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[this.i + idx];
+      for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[(this.i + idx) & 0xFFF];
       if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFF;
     } else {
       throw new Error(`Op Error: 0x${op.toString(16).toUpperCase()}`);
@@ -190,7 +190,7 @@ export class Chip8 {
     const startY = this.v[yReg] % this.height;
     this.v[0xF] = 0;
     for (let row = 0; row < height; row++) {
-      const byte = this.mem[this.i + row];
+      const byte = this.mem[(this.i + row) & 0xFFF];
       for (let bit = 0; bit < 8; bit++) {
         if ((byte & (0x80 >> bit)) === 0) continue;
         const x = (startX + bit) % this.width;
