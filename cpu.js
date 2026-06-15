@@ -236,6 +236,28 @@ export class Chip8 {
     if (this.soundTimer > 0) this.soundTimer -= 1;
   }
 
+  testRunner(testCase) {
+    this.reset();
+    this.load(testCase.bin);
+    for (let i = 0; i < testCase.cycles; i++) {
+      this.cycle();
+    }
+    
+    const results = { passed: true, failures: [] };
+    for (const [key, expected] of Object.entries(testCase.expected)) {
+      let actual;
+      if (key.startsWith('V')) actual = this.v[parseInt(key.slice(1), 16)];
+      else if (key === 'PC') actual = this.pc;
+      else if (key === 'I') actual = this.i;
+      
+      if (actual !== expected) {
+        results.passed = false;
+        results.failures.push(`${key}: Exp ${expected}, Got ${actual}`);
+      }
+    }
+    return results;
+  }
+
   getOpcodeDetails(op) {
     const x = (op & 0x0F00) >> 8;
     const y = (op & 0x00F0) >> 4;
