@@ -30,6 +30,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
       step: document.querySelector("#step-vm"),
       stepOver: document.querySelector("#step-over-vm"),
       reset: document.querySelector("#reset-vm-main"),
+      testVm: document.querySelector("#test-vm"),
       asm: document.querySelector("#assemble-code"),
       load: document.querySelector("#load-assembled"),
       exp: document.querySelector("#export-rom"),
@@ -128,6 +129,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
     dom.btns.step.onclick = () => step(true);
     dom.btns.stepOver.onclick = stepOver;
     dom.btns.reset.onclick = reset;
+    dom.btns.testVm.onclick = runSystemTests;
     dom.btns.asm.onclick = asmEditor;
     dom.btns.load.onclick = loadAsm;
     dom.btns.exp.onclick = exportRom;
