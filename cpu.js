@@ -122,6 +122,10 @@ export class Chip8 {
     else if (op === 0x00C8) { this.width = 64; this.height = 32; this.display.fill(0); }
     else if (op === 0x00CD) { this.halted = true; this.waitingForKey = 'ANY_PRESS'; }
     else if (op === 0x00CF) { this.halted = true; this.waitingForKey = 'ANY_RELEASE'; }
+    else if (op === 0x00F0) { this.width = 128; this.height = 64; this.display.fill(0); }
+    else if (op === 0x00F2) { this.width = 64; this.height = 32; this.display.fill(0); }
+    else if (op === 0x00FD) { this.width = 10; this.height = 60; this.display.fill(0); }
+    else if (op === 0x00FE) { this.width = 64; this.height = 32; this.display.fill(0); }
     else if ((op & 0xF000) === 0x1000) this.pc = nnn;
     else if ((op & 0xF000) === 0x2000) { this.stack.push(this.pc); this.pc = nnn; }
     else if ((op & 0xF000) === 0x3000) { if (this.v[x] === nn) this.pc += 2; }
@@ -286,10 +290,14 @@ export class Chip8 {
     if (op === 0x00C0) return "HLT_K";
     if (op === 0x00C2) return "HLT_P";
     if (op === 0x00C4) return "HLT_R";
-    if (op === 0x00C6) return "HIRES";
-    if (op === 0x00C8) return "LORES";
+    if (op === 0x00C6) return "HIRES (128x64)";
+    if (op === 0x00C8) return "LORES (64x32)";
     if (op === 0x00CD) return "WAITK";
     if (op === 0x00CF) return "WAITR";
+    if (op === 0x00F0) return "HIRES (128x64)";
+    if (op === 0x00F2) return "LORES (64x32)";
+    if (op === 0x00FD) return "RESOL (10x60)";
+    if (op === 0x00FE) return "RESOL (64x32)";
     if (top === 0x1000) return `JP 0x${nnn.toString(16).toUpperCase()}`;
     if (top === 0x2000) return `CALL 0x${nnn.toString(16).toUpperCase()}`;
     if (top === 0x3000) return `SE V${x}, 0x${nn.toString(16).toUpperCase()}`;
