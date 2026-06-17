@@ -81,6 +81,7 @@ export class Assembler {
     if (op === "LORES") return 0x00C8;
     if (op === "WAITK") return 0x00CD;
     if (op === "WAITR") return 0x00CF;
+    if (op === "WAITK_V0") return 0x00F0;
     if (op === "JP") {
       if (parts[1]?.toUpperCase() === "V0") return 0xB000 | this.addr(parts[2], line);
       return 0x1000 | this.addr(parts[1], line);
