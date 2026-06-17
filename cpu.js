@@ -124,6 +124,8 @@ export class Chip8 {
     else if (op === 0x00CF) { this.halted = true; this.waitingForKey = 'ANY_RELEASE'; }
     else if (op === 0x00F0) { this.halted = true; this.waitingForKey = 'V0_BLOCK'; }
     else if (op === 0x00F2) { this.width = 64; this.height = 32; this.display.fill(0); }
+    else if (op === 0x00F4) { this.halted = true; this.waitingForKey = { type: 'SPECIFIC_RELEASE', key: this.v[0] }; }
+    else if (op === 0x00F6) { this.halted = true; this.waitingForKey = 'ANY_RELEASE_SCHIP'; }
     else if (op === 0x00FD) { this.width = 10; this.height = 60; this.display.fill(0); }
     else if (op === 0x00FE) { this.width = 64; this.height = 32; this.display.fill(0); }
     else if ((op & 0xF000) === 0x1000) this.pc = nnn;
@@ -210,28 +212,36 @@ export class Chip8 {
     this.keys[key] = pressed ? 1 : 0;
 
     if (this.halted) {
-      if (this.waitingForKey === 'PRESS' && pressed) {
+      const wait = this.waitingForKey;
+      if (wait === 'PRESS' && pressed) {
         this.halted = false;
         this.waitingForKey = null;
-      } else if (this.waitingForKey === 'RELEASE' && !pressed) {
+      } else if (wait === 'RELEASE' && !pressed) {
         this.halted = false;
         this.waitingForKey = null;
-      } else if (this.waitingForKey === 'ANY_PRESS' && pressed) {
+      } else if (wait === 'ANY_PRESS' && pressed) {
         this.halted = false;
         this.waitingForKey = null;
-      } else if (this.waitingForKey === 'ANY_RELEASE' && !this.keys.some(k => k === 1)) {
+      } else if (wait === 'ANY_RELEASE' && !this.keys.some(k => k === 1)) {
         this.halted = false;
         this.waitingForKey = null;
-      } else if (this.waitingForKey === 'V0_BLOCK' && pressed) {
+      } else if (wait === 'V0_BLOCK' && pressed) {
         this.v[0] = key;
         this.halted = false;
         this.waitingForKey = null;
-      } else if (this.waitingForKey === null && pressed) {
+      } else if (wait === 'ANY_RELEASE_SCHIP' && !this.keys.some(k => k === 1)) {
+        this.halted = false;
+        this.waitingForKey = null;
+      } else if (wait && typeof wait === 'object' && wait.type === 'SPECIFIC_RELEASE' && !pressed && key === wait.key) {
+        this.halted = false;
+        this.waitingForKey = null;
+      } else if (wait === null && pressed) {
         this.halted = false;
       }
     }
 
-    if (this.waitingForKey !== null && this.waitingForKey !== 'PRESS' && this.waitingForKey !== 'RELEASE' && this.waitingForKey !== 'ANY_PRESS' && this.waitingForKey !== 'ANY_RELEASE' && this.waitingForKey !== 'V0_BLOCK') {
+    if (this.waitingForKey !== null && typeof this.waitingForKey !== 'object' && 
+        !['PRESS', 'RELEASE', 'ANY_PRESS', 'ANY_RELEASE', 'ANY_RELEASE_SCHIP'].includes(this.waitingForKey)) {
       if (pressed) {
         this.v[this.waitingForKey] = key;
         this.waitingForKey = null;
@@ -300,6 +310,8 @@ export class Chip8 {
     if (op === 0x00CF) return "WAITR";
     if (op === 0x00F0) return "WAITK_V0";
     if (op === 0x00F2) return "LORES (64x32)";
+    if (op === 0x00F4) return "WAITR_V0";
+    if (op === 0x00F6) return "WAITR_ANY";
     if (op === 0x00FD) return "RESOL (10x60)";
     if (op === 0x00FE) return "RESOL (64x32)";
     if (top === 0x1000) return `JP 0x${nnn.toString(16).toUpperCase()}`;
