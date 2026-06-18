@@ -61,7 +61,8 @@ export const SETTINGS_DATA = [
   ["Reg Format", "Base for registers.", "registerFormat", ["Hexadecimal", "Decimal", "Binary"]],
   ["Pixelated Effect", "Toggle retro screen filter.", "pixelated", ["On", "Off"]],
   ["Shift Quirk", "SHR/SHL use Vy.", "shiftQuirk", ["Off", "On"]],
-  ["IncI Quirk", "LD [I], Vx increments I.", "incIQuirk", ["Off", "On"]]
+  ["IncI Quirk", "LD [I], Vx increments I.", "incIQuirk", ["Off", "On"]],
+  ["Draw Wrap", "Pixels wrap around screen.", "drawWrapQuirk", ["On", "Off"]]
 ];
 
 export const TEST_SUITE = [
