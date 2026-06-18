@@ -444,6 +444,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
         break;
       case 'shiftQuirk':
       case 'incIQuirk':
+      case 'drawWrapQuirk':
         chip.setQuirk(key, value);
         break;
     }
