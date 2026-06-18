@@ -14,7 +14,7 @@ export class Chip8 {
     this.prevV = new Uint8Array(16);
     this.waitingForKey = null;
     this.halted = false;
-    this.quirks = { shiftUsesVy: false, incrementI: true };
+    this.quirks = { shiftUsesVy: false, incrementI: true, drawWraps: true };
     this.history = [];
     this.reset();
   }
@@ -43,6 +43,7 @@ export class Chip8 {
   setQuirk(key, value) {
     if (key === 'shiftQuirk') this.quirks.shiftUsesVy = (value === "On");
     if (key === 'incIQuirk') this.quirks.incrementI = (value === "On");
+    if (key === 'drawWrapQuirk') this.quirks.drawWraps = (value === "On");
   }
 
   load(bytes, start = 0x200) {
@@ -199,8 +200,12 @@ export class Chip8 {
       const byte = this.mem[(this.i + row) & 0xFFF];
       for (let bit = 0; bit < 8; bit++) {
         if ((byte & (0x80 >> bit)) === 0) continue;
-        const x = (startX + bit) % this.width;
-        const y = (startY + row) % this.height;
+        
+        const x = this.quirks.drawWraps ? (startX + bit) % this.width : startX + bit;
+        const y = this.quirks.drawWraps ? (startY + row) % this.height : startY + row;
+        
+        if (x >= this.width || y >= this.height) continue;
+
         const idx = y * this.width + x;
         if (this.display[idx]) this.v[0xF] = 1;
         this.display[idx] ^= 1;
