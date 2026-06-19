@@ -154,7 +154,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
 
     dom.btns.mjmp.onclick = () => {
       const a = parseInt(dom.mjmpIn.value, 16);
-      if (!isNaN(a)) { state.memOff = a & 0xFFF; sync(); }
+      if (!isNaN(a)) { state.memOff = a & 0xFFFF; sync(); }
     };
 
     dom.btns.mhome.onclick = () => { state.memOff = 0x200; sync(); };
@@ -272,7 +272,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
       const dec = chip.cycle();
       if (dec === "BREAKPOINT_HIT") {
         pause();
-        lastMsg = `BP Hit at 0x${fmtHex(chip.pc, 3)}`;
+        lastMsg = `BP Hit at 0x${fmtHex(chip.pc, 4)}`;
       } else if (dec === "WATCHPOINT_HIT") {
         pause();
         lastMsg = "Watchpoint triggered: Register changed";
@@ -358,7 +358,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
     chip.history.forEach(entry => {
       const line = document.createElement("div");
       line.className = "log-entry";
-      line.textContent = `[${entry.cycle}] 0x${fmtHex(entry.pc, 3)} | 0x${fmtHex(entry.op, 4)} ${entry.desc}`;
+      line.textContent = `[${entry.cycle}] 0x${fmtHex(entry.pc, 4)} | 0x${fmtHex(entry.op, 4)} ${entry.desc}`;
       line.onclick = () => showInspector(entry);
       dom.log.appendChild(line);
     });
@@ -376,7 +376,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
     dom.inspectorBody.innerHTML = `
       <div class="detail-row"><span>Opcode</span><strong>0x${fmtHex(entry.op, 4)}</strong></div>
       <div class="detail-row"><span>Instruction</span><strong>${details.desc}</strong></div>
-      <div class="detail-row"><span>PC</span><strong>0x${fmtHex(entry.pc, 3)}</strong></div>
+      <div class="detail-row"><span>PC</span><strong>0x${fmtHex(entry.pc, 4)}</strong></div>
       <div class="detail-row"><span>Cycle</span><strong>${entry.cycle}</strong></div>
       <div style="margin-top:16px;" class="section-label">Bit Breakdown</div>
       ${bitHtml}
@@ -468,7 +468,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
       ["State", loop ? "Running" : "Paused"],
       ["ROM", romName],
       ["Clock", `${dom.speed.value} Hz`],
-      ["PC", `0x${fmtHex(chip.pc, 3)}`],
+      ["PC", `0x${fmtHex(chip.pc, 4)}`],
       ["Op", `0x${fmtHex(chip.lastOp, 4)}`]
     ];
     dom.status.innerHTML = rows.map(([l, v]) => `<div class="status-item"><span class="status-label">${l}</span><span
@@ -497,13 +497,13 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
       for (let i = 0; i < 256; i++) {
         const b = document.createElement("div");
         b.className = "byte";
-        b.onclick = () => { state.selAddr = (state.memOff + i) & 0xFFF; sync(); };
+        b.onclick = () => { state.selAddr = (state.memOff + i) & 0xFFFF; sync(); };
         dom.memGrid.appendChild(b);
       }
     }
     const off = state.memOff;
     for (let i = 0; i < cells.length; i++) {
-      const a = (off + i) & 0xFFF;
+      const a = (off + i) & 0xFFFF;
       cells[i].textContent = valStr(chip.mem[a], state.memFmt);
       cells[i].className = "byte";
       if (a === chip.pc) cells[i].classList.add("pc");
@@ -538,8 +538,8 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
     let n = val.toLowerCase().startsWith("0x") ? parseInt(val.slice(2), 16) : parseInt(val, 10);
     if (isNaN(n)) return;
     if (idx < 16) chip.v[idx] = n & 0xFF;
-    else if (idx === 16) chip.i = n & 0xFFF;
-    else if (idx === 17) chip.pc = n & 0xFFF;
+    else if (idx === 16) chip.i = n & 0xFFFF;
+    else if (idx === 17) chip.pc = n & 0xFFFF;
     else if (idx === 19) chip.delayTimer = n & 0xFF;
     else if (idx === 20) chip.soundTimer = n & 0xFF;
     sync();
@@ -557,7 +557,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
     chip.bps.forEach(a => {
       const c = document.createElement("span");
       c.className = "bp-chip";
-      c.textContent = `0x${fmtHex(a, 3)} ✕`;
+      c.textContent = `0x${fmtHex(a, 4)} ✕`;
       c.onclick = () => { chip.bps.delete(a); sync(); };
       dom.bpList.appendChild(c);
     });
@@ -575,7 +575,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
   }
 
   function renderStack() {
-    dom.stackView.innerHTML = chip.stack.map((a, i) => `<div class="stack-item">${fmtHex(a, 3)}</div>`).join("");
+    dom.stackView.innerHTML = chip.stack.map((a, i) => `<div class="stack-item">${fmtHex(a, 4)}</div>`).join("");
   }
 
   setupImmediate();
