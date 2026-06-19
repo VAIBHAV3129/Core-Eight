@@ -2,7 +2,7 @@ import { FONT_SET } from './data.js';
 
 export class Chip8 {
   constructor() {
-    this.mem = new Uint8Array(4096);
+    this.mem = new Uint8Array(65536);
     this.v = new Uint8Array(16);
     this.width = 64;
     this.height = 32;
@@ -66,7 +66,7 @@ export class Chip8 {
     const pcBefore = this.pc;
 
     this.lastOp = op;
-    this.pc = (this.pc + 2) & 0xFFF;
+    this.pc = (this.pc + 2) & 0xFFFF;
     this.cycles += 1;
     this.exec(op);
 
@@ -100,7 +100,7 @@ export class Chip8 {
     if ((op & 0xF000) !== 0x2000) return this.cycle();
 
     let limit = 0;
-    while (this.lastOp !== 0x00EE && limit < 4096) {
+    while (this.lastOp !== 0x00EE && limit < 65536) {
       if (this.cycle() === "BREAKPOINT_HIT") return "BP HIT during Step-Over";
       limit++;
     }
@@ -139,7 +139,7 @@ export class Chip8 {
     else if ((op & 0xF000) === 0x8000) this.alu(x, y, n);
     else if ((op & 0xF00F) === 0x9000) { if (this.v[x] !== this.v[y]) this.pc += 2; }
     else if ((op & 0xF000) === 0xA000) this.i = nnn;
-    else if ((op & 0xF000) === 0xB000) this.pc = (nnn + this.v[0]) & 0xFFF;
+    else if ((op & 0xF000) === 0xB000) this.pc = (nnn + this.v[0]) & 0xFFFF;
     else if ((op & 0xF000) === 0xC000) this.v[x] = Math.floor(Math.random() * 256) & nn;
     else if ((op & 0xF000) === 0xD000) this.draw(x, y, n);
     else if ((op & 0xF0FF) === 0xE09E) { if (this.keys[this.v[x] & 0xF]) this.pc += 2; }
@@ -148,19 +148,19 @@ export class Chip8 {
     else if ((op & 0xF0FF) === 0xF00A) this.waitingForKey = x;
     else if ((op & 0xF0FF) === 0xF015) this.delayTimer = this.v[x];
     else if ((op & 0xF0FF) === 0xF018) this.soundTimer = this.v[x];
-    else if ((op & 0xF0FF) === 0xF01E) this.i = (this.i + this.v[x]) & 0xFFF;
+    else if ((op & 0xF0FF) === 0xF01E) this.i = (this.i + this.v[x]) & 0xFFFF;
     else if ((op & 0xF0FF) === 0xF029) this.i = 0x50 + (this.v[x] & 0xF) * 5;
     else if ((op & 0xF0FF) === 0xF033) {
       const val = this.v[x];
-      this.mem[this.i & 0xFFF] = Math.floor(val / 100);
-      this.mem[(this.i + 1) & 0xFFF] = Math.floor((val % 100) / 10);
-      this.mem[(this.i + 2) & 0xFFF] = val % 10;
+      this.mem[this.i & 0xFFFF] = Math.floor(val / 100);
+      this.mem[(this.i + 1) & 0xFFFF] = Math.floor((val % 100) / 10);
+      this.mem[(this.i + 2) & 0xFFFF] = val % 10;
     } else if ((op & 0xF0FF) === 0xF055) {
-      for (let idx = 0; idx <= x; idx++) this.mem[(this.i + idx) & 0xFFF] = this.v[idx];
-      if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFF;
+      for (let idx = 0; idx <= x; idx++) this.mem[(this.i + idx) & 0xFFFF] = this.v[idx];
+      if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
     } else if ((op & 0xF0FF) === 0xF065) {
-      for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[(this.i + idx) & 0xFFF];
-      if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFF;
+      for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[(this.i + idx) & 0xFFFF];
+      if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
     } else {
       throw new Error(`Op Error: 0x${op.toString(16).toUpperCase()}`);
     }
@@ -197,7 +197,7 @@ export class Chip8 {
     const startY = this.v[yReg] % this.height;
     this.v[0xF] = 0;
     for (let row = 0; row < height; row++) {
-      const byte = this.mem[(this.i + row) & 0xFFF];
+      const byte = this.mem[(this.i + row) & 0xFFFF];
       for (let bit = 0; bit < 8; bit++) {
         if ((byte & (0x80 >> bit)) === 0) continue;
         
@@ -319,8 +319,8 @@ export class Chip8 {
     if (op === 0x00F6) return "WAITR_ANY";
     if (op === 0x00FD) return "RESOL (10x60)";
     if (op === 0x00FE) return "RESOL (64x32)";
-    if (top === 0x1000) return `JP 0x${nnn.toString(16).toUpperCase()}`;
-    if (top === 0x2000) return `CALL 0x${nnn.toString(16).toUpperCase()}`;
+    if (top === 0x1000) return `JP 0x${nnn.toString(16).toUpperCase().padStart(4, '0')}`;
+    if (top === 0x2000) return `CALL 0x${nnn.toString(16).toUpperCase().padStart(4, '0')}`;
     if (top === 0x3000) return `SE V${x}, 0x${nn.toString(16).toUpperCase()}`;
     if (top === 0x4000) return `SNE V${x}, 0x${nn.toString(16).toUpperCase()}`;
     if ((op & 0xF00F) === 0x5000) return `SE V${x}, V${y}`;
@@ -328,8 +328,8 @@ export class Chip8 {
     if (top === 0x7000) return `ADD V${x}, 0x${nn.toString(16).toUpperCase()}`;
     if (top === 0x8000) return ["LD", "OR", "AND", "XOR", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", "SHL"][n] + ` V${x}, V${y}`;
     if ((op & 0xF00F) === 0x9000) return `SNE V${x}, V${y}`;
-    if (top === 0xA000) return `LD I, 0x${nnn.toString(16).toUpperCase()}`;
-    if (top === 0xB000) return `JP V0, 0x${nnn.toString(16).toUpperCase()}`;
+    if (top === 0xA000) return `LD I, 0x${nnn.toString(16).toUpperCase().padStart(4, '0')}`;
+    if (top === 0xB000) return `JP V0, 0x${nnn.toString(16).toUpperCase().padStart(4, '0')}`;
     if (top === 0xC000) return `RND V${x}, 0x${nn.toString(16).toUpperCase()}`;
     if (top === 0xD000) return `DRW V${x}, V${y}, ${n}`;
     if ((op & 0xF0FF) === 0xE09E) return `SKP V${x}`;
