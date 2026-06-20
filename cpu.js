@@ -120,11 +120,27 @@ export class Chip8 {
     else if (op === 0x00C2) { this.halted = true; this.waitingForKey = 'PRESS'; }
     else if (op === 0x00C4) { this.halted = true; this.waitingForKey = 'RELEASE'; }
     else if (op === 0x00C6) { this.width = 128; this.height = 64; this.display.fill(0); }
-    else if (op === 0x00C8) { this.width = 64; this.height = 32; this.display.fill(0); }
+    else if (op === 0x00C8 || op === 0x00F2) {
+      if (this.width === 128) {
+        const temp = new Uint8Array(64 * 32);
+        for (let row = 0; row < 32; row++) {
+          for (let col = 0; col < 64; col++) {
+            const p1 = this.display[(row * 2) * 128 + (col * 2)];
+            const p2 = this.display[(row * 2) * 128 + (col * 2 + 1)];
+            const p3 = this.display[(row * 2 + 1) * 128 + (col * 2)];
+            const p4 = this.display[(row * 2 + 1) * 128 + (col * 2 + 1)];
+            temp[row * 64 + col] = p1 | p2 | p3 | p4;
+          }
+        }
+        this.display.fill(0);
+        this.display.set(temp);
+      }
+      this.width = 64;
+      this.height = 32;
+    }
     else if (op === 0x00CD) { this.halted = true; this.waitingForKey = 'ANY_PRESS'; }
     else if (op === 0x00CF) { this.halted = true; this.waitingForKey = 'ANY_RELEASE'; }
     else if (op === 0x00F0) { this.halted = true; this.waitingForKey = 'V0_BLOCK'; }
-    else if (op === 0x00F2) { this.width = 64; this.height = 32; this.display.fill(0); }
     else if (op === 0x00F4) { this.halted = true; this.waitingForKey = { type: 'SPECIFIC_RELEASE', key: this.v[0] }; }
     else if (op === 0x00F6) { this.halted = true; this.waitingForKey = 'ANY_RELEASE_SCHIP'; }
     else if (op === 0x00FD) { this.width = 10; this.height = 60; this.display.fill(0); }
