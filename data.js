@@ -73,6 +73,18 @@ export const TEST_SUITE = [
     expected: { "V0": 24 }
   },
   {
+    name: "ADD Overflow",
+    bin: new Uint8Array([0x60, 0xFF, 0x61, 0x01, 0x80, 0x10]),
+    cycles: 3,
+    expected: { "V0": 0, "VF": 1 }
+  },
+  {
+    name: "SUB Underflow",
+    bin: new Uint8Array([0x60, 0x00, 0x61, 0x01, 0x80, 0x50]),
+    cycles: 3,
+    expected: { "V0": 255, "VF": 0 }
+  },
+  {
     name: "Jump to 0x300",
     bin: new Uint8Array([0x13, 0x00]),
     cycles: 1,
@@ -83,5 +95,23 @@ export const TEST_SUITE = [
     bin: new Uint8Array([0xA0, 0x04, 0x50]),
     cycles: 1,
     expected: { "I": 0x450 }
+  },
+  {
+    name: "Draw Collision",
+    bin: new Uint8Array([0x60, 0x00, 0x61, 0x00, 0xA0, 0x00, 0x00, 0xD0, 0x00, 0x01, 0x01, 0xD0, 0x00, 0x01, 0x01]),
+    cycles: 5,
+    expected: { "VF": 1 }
+  },
+  {
+    name: "SCHIP HIRES Switch",
+    bin: new Uint8Array([0x00, 0xC6]),
+    cycles: 1,
+    expected: { "width": 128, "height": 64 }
+  },
+  {
+    name: "SCHIP Wait-Key Halt",
+    bin: new Uint8Array([0x00, 0xCD]),
+    cycles: 1,
+    expected: { "halted": true }
   }
 ];
