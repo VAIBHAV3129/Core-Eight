@@ -5,6 +5,7 @@ export class Assembler {
       labels: {},
       constants: {}
     };
+    this.rawConstants = {};
     this.errors = [];
     this.lines = [];
   }
@@ -12,6 +13,7 @@ export class Assembler {
   assemble(source) {
     this.symbols.labels = {};
     this.symbols.constants = {};
+    this.rawConstants = {};
     this.errors = [];
     this.lines = this.clean(source);
     this.firstPass();
@@ -39,7 +41,8 @@ export class Assembler {
         const parts = text.split(/\s+EQU\s+/i);
         const name = parts[0].trim().toUpperCase();
         const valStr = parts[1].trim();
-        this.symbols.constants[name] = this.num(valStr, line);
+        this.rawConstants[name] = valStr;
+        this.resolveSymbol(name);
         return;
       }
 
@@ -52,6 +55,38 @@ export class Assembler {
         pc += 2;
       }
     });
+  }
+
+  resolveSymbol(name, visited = new Set()) {
+    if (visited.has(name)) {
+      this.errors.push(`Circular reference detected in constant: ${name}`);
+      return 0;
+    }
+
+    if (this.symbols.constants[name] !== undefined) return this.symbols.constants[name];
+    if (this.symbols.labels[name] !== undefined) return this.symbols.labels[name];
+
+    const raw = this.rawConstants[name];
+    if (raw === undefined) return undefined;
+
+    visited.add(name);
+    const value = this.evaluateRaw(raw, visited);
+    this.symbols.constants[name] = value;
+    return value;
+  }
+
+  evaluateRaw(raw, visited) {
+    const k = raw.toUpperCase();
+    if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
+    if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
+    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, visited);
+    
+    if (/^0X[0-9A-F]+/i.test(raw)) return parseInt(raw, 16);
+    if (/^\$[0-9A-F]+/i.test(raw)) return parseInt(raw.slice(1), 16);
+    if (/^%[01]+$/i.test(raw)) return parseInt(raw.slice(1), 2);
+    if (/^[0-9]+$/.test(raw)) return parseInt(raw, 10);
+
+    return 0;
   }
 
   secondPass() {
@@ -220,6 +255,7 @@ export class Assembler {
     const k = val.toUpperCase();
     if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
     if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
+    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k);
     if (/^0X[0-9A-F]+/i.test(val)) return parseInt(val, 16);
     if (/^\$[0-9A-F]+/i.test(val)) return parseInt(val.slice(1), 16);
     if (/^%[01]+$/i.test(val)) return parseInt(val.slice(1), 2);
