@@ -35,6 +35,7 @@ class CoreEightApp {
         this.renderer.resize(this.cpu.width, this.cpu.height);
         this.boot();
         this.setupUI();
+        this.setupCursor();
         this.renderStatic();
         this.loadScratch();
         this.sync();
@@ -53,6 +54,15 @@ class CoreEightApp {
             if (loadBar) loadBar.style.width = `${progress}%`;
             if (loadNum) loadNum.textContent = `${progress}%`;
         }, 100);
+    }
+
+    setupCursor() {
+        const cursor = document.getElementById('custom-cursor');
+        if (!cursor) return;
+        window.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
     }
 
     setupUI() {
