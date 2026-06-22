@@ -1,10 +1,15 @@
 export class Assembler {
   constructor(origin = 0x200) {
     this.origin = origin;
+    this.labels = {};
+    this.constants = {};
+    this.errors = [];
+    this.lines = [];
   }
 
   assemble(source) {
     this.labels = {};
+    this.constants = {};
     this.errors = [];
     this.lines = this.clean(source);
     this.firstPass();
@@ -12,6 +17,7 @@ export class Assembler {
     return {
       bytes: Uint8Array.from(bytes),
       labels: this.labels,
+      constants: this.constants,
       errors: this.errors
     };
   }
@@ -26,8 +32,18 @@ export class Assembler {
   firstPass() {
     let pc = this.origin;
     this.lines.forEach((line) => {
+      const text = line.text;
+      if (text.toUpperCase().includes(" EQU ")) {
+        const parts = text.split(/\s+EQU\s+/i);
+        const name = parts[0].trim().toUpperCase();
+        const valStr = parts[1].trim();
+        this.constants[name] = this.num(valStr, line);
+        return;
+      }
+
       const body = this.takeLabel(line, pc);
       if (!body) return;
+
       if (body.toUpperCase().startsWith("DB ")) {
         pc += this.parseDb(body, line).length;
       } else {
@@ -40,14 +56,19 @@ export class Assembler {
     const out = [];
     let pc = this.origin;
     this.lines.forEach((line) => {
+      const text = line.text;
+      if (text.toUpperCase().includes(" EQU ")) return;
+
       const body = this.takeLabel(line, pc);
       if (!body) return;
+
       if (body.toUpperCase().startsWith("DB ")) {
         const bytes = this.parseDb(body, line);
         bytes.forEach((byte) => out.push(byte));
         pc += bytes.length;
         return;
       }
+
       const word = this.encode(body, line);
       if (word !== null) {
         out.push((word >> 8) & 0xFF, word & 0xFF);
@@ -72,6 +93,7 @@ export class Assembler {
   encode(text, line) {
     const parts = text.replace(/,/g, " ").split(/\s+/).filter(Boolean);
     const op = parts[0]?.toUpperCase();
+
     if (op === "CLS") return 0x00E0;
     if (op === "RET") return 0x00EE;
     if (op === "HLTK") return 0x00C0;
@@ -82,10 +104,12 @@ export class Assembler {
     if (op === "WAITK") return 0x00CD;
     if (op === "WAITR") return 0x00CF;
     if (op === "WAITK_V0") return 0x00F0;
+
     if (op === "JP") {
       if (parts[1]?.toUpperCase() === "V0") return 0xB000 | this.addr(parts[2], line);
       return 0x1000 | this.addr(parts[1], line);
     }
+
     if (op === "CALL") return 0x2000 | this.addr(parts[1], line);
     if (op === "SE") return this.encodeSkip(parts, line, true);
     if (op === "SNE") return this.encodeSkip(parts, line, false);
@@ -96,22 +120,27 @@ export class Assembler {
     if (op === "XOR") return 0x8003 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4);
     if (op === "SUB") return 0x8005 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4);
     if (op === "SUBN") return 0x8007 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4);
+    
     if (op === "SHR") {
       const x = this.reg(parts[1], line);
       const y = this.isReg(parts[2]) ? this.reg(parts[2], line) : x;
       return 0x8006 | (x << 8) | (y << 4);
     }
+
     if (op === "SHL") {
       const x = this.reg(parts[1], line);
       const y = this.isReg(parts[2]) ? this.reg(parts[2], line) : x;
       return 0x800E | (x << 8) | (y << 4);
     }
+
     if (op === "RND") return 0xC000 | (this.reg(parts[1], line) << 8) | this.byte(parts[2], line);
     if (op === "DRW") {
       return 0xD000 | (this.reg(parts[1], line) << 8) | (this.reg(parts[2], line) << 4) | (this.num(parts[3], line) & 0xF);
     }
+
     if (op === "SKP") return 0xE09E | (this.reg(parts[1], line) << 8);
     if (op === "SKNP") return 0xE0A1 | (this.reg(parts[1], line) << 8);
+
     this.errors.push(`Line ${line.line}: Unknown instruction "${op}"`);
     return null;
   }
@@ -128,6 +157,7 @@ export class Assembler {
   encodeLd(parts, line) {
     const a = parts[1]?.toUpperCase();
     const b = parts[2]?.toUpperCase();
+
     if (this.isReg(a) && this.isReg(b)) return 0x8000 | (this.reg(a, line) << 8) | (this.reg(b, line) << 4);
     if (this.isReg(a) && b === "DT") return 0xF007 | (this.reg(a, line) << 8);
     if (this.isReg(a) && b === "K") return 0xF00A | (this.reg(a, line) << 8);
@@ -139,6 +169,7 @@ export class Assembler {
     if (a === "F") return 0xF029 | (this.reg(parts[2], line) << 8);
     if (a === "B") return 0xF033 | (this.reg(parts[2], line) << 8);
     if (a === "[I]") return 0xF055 | (this.reg(parts[2], line) << 8);
+
     this.errors.push(`Line ${line.line}: Invalid LD parameters`);
     return null;
   }
@@ -155,27 +186,40 @@ export class Assembler {
     return text.slice(3).split(",").map((part) => this.byte(part.trim(), line));
   }
 
-  isReg(val) { return /^V[0-9A-F]$/i.test(val || ""); }
+  isReg(val) {
+    return /^V[0-9A-F]$/i.test(val || "");
+  }
+
   reg(val, line) {
-    if (!this.isReg(val)) { this.errors.push(`Line ${line.line}: Invalid register "${val}". Expected V0-VF`); return 0; }
+    if (!this.isReg(val)) {
+      this.errors.push(`Line ${line.line}: Invalid register "${val}". Expected V0-VF`);
+      return 0;
+    }
     return parseInt(val.slice(1), 16);
   }
+
   byte(val, line) {
     const n = this.num(val, line);
     if (n < 0 || n > 0xFF) this.errors.push(`Line ${line.line}: Value ${val} out of 8-bit range (0-255)`);
     return n & 0xFF;
   }
+
   addr(val, line) {
     const n = this.num(val, line);
     if (n < 0 || n > 0xFFF) this.errors.push(`Line ${line.line}: Address ${val} out of 12-bit range (0-4095)`);
     return n & 0xFFF;
   }
+
   num(val, line) {
-    if (!val) { this.errors.push(`Line ${line.line}: Missing value`); return 0; }
+    if (!val) {
+      this.errors.push(`Line ${line.line}: Missing value`);
+      return 0;
+    }
     const k = val.toUpperCase();
     if (this.labels[k] !== undefined) return this.labels[k];
-    if (/^0X[0-9A-F]+$/i.test(val)) return parseInt(val, 16);
-    if (/^\$[0-9A-F]+$/i.test(val)) return parseInt(val.slice(1), 16);
+    if (this.constants[k] !== undefined) return this.constants[k];
+    if (/^0X[0-9A-F]+/i.test(val)) return parseInt(val, 16);
+    if (/^\$[0-9A-F]+/i.test(val)) return parseInt(val.slice(1), 16);
     if (/^[0-9]+$/.test(val)) return parseInt(val, 10);
     this.errors.push(`Line ${line.line}: Unknown numeric format "${val}"`);
     return 0;
