@@ -16,8 +16,6 @@ export class Chip8 {
     this.halted = false;
     this.quirks = { shiftUsesVy: false, incrementI: true, drawWraps: true };
     this.history = [];
-    
-    this.initDispatchTable();
     this.reset();
   }
 
@@ -70,7 +68,6 @@ export class Chip8 {
     this.lastOp = op;
     this.pc = (this.pc + 2) & 0xFFFF;
     this.cycles += 1;
-    
     this.exec(op);
 
     if (this.checkWatches()) return "WATCHPOINT_HIT";
@@ -110,137 +107,82 @@ export class Chip8 {
     return "Subroutine completed";
   }
 
-  initDispatchTable() {
-    this.dispatchTable = {
-      0x0: (op) => {
-        const nn = op & 0x00FF;
-        if (op === 0x00E0) this.display.fill(0);
-        else if (op === 0x00EE) this.pc = this.stack.pop() ?? 0x200;
-        else if (op === 0x00C0) this.halted = true;
-        else if (op === 0x00C2) { this.halted = true; this.waitingForKey = 'PRESS'; }
-        else if (op === 0x00C4) { this.halted = true; this.waitingForKey = 'RELEASE'; }
-        else if (op === 0x00C6) { this.width = 128; this.height = 64; this.display.fill(0); }
-        else if (op === 0x00C8 || op === 0x00F2) {
-          if (this.width === 128) {
-            const temp = new Uint8Array(64 * 32);
-            for (let row = 0; row < 32; row++) {
-              for (let col = 0; col < 64; col++) {
-                const p1 = this.display[(row * 2) * 128 + (col * 2)];
-                const p2 = this.display[(row * 2) * 128 + (col * 2 + 1)];
-                const p3 = this.display[(row * 2 + 1) * 128 + (col * 2)];
-                const p4 = this.display[(row * 2 + 1) * 128 + (col * 2 + 1)];
-                temp[row * 64 + col] = p1 | p2 | p3 | p4;
-              }
-            }
-            this.display.fill(0);
-            this.display.set(temp);
-          }
-          this.width = 64;
-          this.height = 32;
-        }
-        else if (op === 0x00CD) { this.halted = true; this.waitingForKey = 'ANY_PRESS'; }
-        else if (op === 0x00CF) { this.halted = true; this.waitingForKey = 'ANY_RELEASE'; }
-        else if (op === 0x00F0) { this.halted = true; this.waitingForKey = 'V0_BLOCK'; }
-        else if (op === 0x00F4) { this.halted = true; this.waitingForKey = { type: 'SPECIFIC_RELEASE', key: this.v[0] }; }
-        else if (op === 0x00F6) { this.halted = true; this.waitingForKey = 'ANY_RELEASE_SCHIP'; }
-        else if (op === 0x00FD) { this.width = 10; this.height = 60; this.display.fill(0); }
-        else if (op === 0x00FE) { this.width = 64; this.height = 32; this.display.fill(0); }
-      },
-      0x1: (op) => { this.pc = op & 0x0FFF; },
-      0x2: (op) => { this.stack.push(this.pc); this.pc = op & 0x0FFF; },
-      0x3: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        if (this.v[x] === nn) this.pc += 2; 
-      },
-      0x4: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        if (this.v[x] !== nn) this.pc += 2; 
-      },
-      0x5: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const y = (op & 0x00F0) >> 4;
-        if (this.v[x] === this.v[y]) this.pc += 2; 
-      },
-      0x6: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        this.v[x] = nn; 
-      },
-      0x7: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        this.v[x] = (this.v[x] + nn) & 0xFF; 
-      },
-      0x8: (op) => {
-        const x = (op & 0x0F00) >> 8;
-        const y = (op & 0x00F0) >> 4;
-        const mode = op & 0x000F;
-        this.alu(x, y, mode);
-      },
-      0x9: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const y = (op & 0x00F0) >> 4;
-        if (this.v[x] !== this.v[y]) this.pc += 2; 
-      },
-      0xA: (op) => { this.i = op & 0x0FFF; },
-      0xB: (op) => { this.pc = ( (op & 0x0FFF) + this.v[0] ) & 0xFFFF; },
-      0xC: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        this.v[x] = Math.floor(Math.random() * 256) & nn; 
-      },
-      0xD: (op) => { 
-        const x = (op & 0x0F00) >> 8;
-        const y = (op & 0x00F0) >> 4;
-        const n = op & 0x000F;
-        this.draw(x, y, n); 
-      },
-      0xE: (op) => {
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        if (nn === 0x9E) { if (this.keys[this.v[x] & 0xF]) this.pc += 2; }
-        else if (nn === 0xA1) { if (!this.keys[this.v[x] & 0xF]) this.pc += 2; }
-      },
-      0xF: (op) => {
-        const x = (op & 0x0F00) >> 8;
-        const nn = op & 0x00FF;
-        if (nn === 0x07) this.v[x] = this.delayTimer;
-        else if (nn === 0x0A) this.waitingForKey = x;
-        else if (nn === 0x15) this.delayTimer = this.v[x];
-        else if (nn === 0x18) this.soundTimer = this.v[x];
-        else if (nn === 0x1E) this.i = (this.i + this.v[x]) & 0xFFFF;
-        else if (nn === 0x29) this.i = 0x50 + (this.v[x] & 0xF) * 5;
-        else if (nn === 0x33) {
-          const val = this.v[x];
-          this.mem[this.i & 0xFFFF] = Math.floor(val / 100);
-          this.mem[(this.i + 1) & 0xFFFF] = Math.floor((val % 100) / 10);
-          this.mem[(this.i + 2) & 0xFFFF] = val % 10;
-        } else if (nn === 0x55) {
-          for (let idx = 0; idx <= x; idx++) this.mem[(this.i + idx) & 0xFFFF] = this.v[idx];
-          if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
-        } else if (nn === 0x65) {
-          for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[(this.i + idx) & 0xFFFF];
-          if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
-        }
-      }
-    };
-  }
-
   exec(op) {
-    const nibble = (op & 0xF000) >> 12;
-    const handler = this.dispatchTable[nibble];
-    
-    if (handler) {
-      handler(op);
+    const x = (op & 0x0F00) >> 8;
+    const y = (op & 0x00F0) >> 4;
+    const n = op & 0x000F;
+    const nn = op & 0x00FF;
+    const nnn = op & 0x0FFF;
+
+    if (op === 0x00E0) this.display.fill(0);
+    else if (op === 0x00EE) this.pc = this.stack.pop() ?? 0x200;
+    else if (op === 0x00C0) { this.halted = true; }
+    else if (op === 0x00C2) { this.halted = true; this.waitingForKey = 'PRESS'; }
+    else if (op === 0x00C4) { this.halted = true; this.waitingForKey = 'RELEASE'; }
+    else if (op === 0x00C6) { this.width = 128; this.height = 64; this.display.fill(0); }
+    else if (op === 0x00C8 || op === 0x00F2) {
+      if (this.width === 128) {
+        const temp = new Uint8Array(64 * 32);
+        for (let row = 0; row < 32; row++) {
+          for (let col = 0; col < 64; col++) {
+            const p1 = this.display[(row * 2) * 128 + (col * 2)];
+            const p2 = this.display[(row * 2) * 128 + (col * 2 + 1)];
+            const p3 = this.display[(row * 2 + 1) * 128 + (col * 2)];
+            const p4 = this.display[(row * 2 + 1) * 128 + (col * 2 + 1)];
+            temp[row * 64 + col] = p1 | p2 | p3 | p4;
+          }
+        }
+        this.display.fill(0);
+        this.display.set(temp);
+      }
+      this.width = 64;
+      this.height = 32;
+    }
+    else if (op === 0x00CD) { this.halted = true; this.waitingForKey = 'ANY_PRESS'; }
+    else if (op === 0x00CF) { this.halted = true; this.waitingForKey = 'ANY_RELEASE'; }
+    else if (op === 0x00F0) { this.halted = true; this.waitingForKey = 'V0_BLOCK'; }
+    else if (op === 0x00F4) { this.halted = true; this.waitingForKey = { type: 'SPECIFIC_RELEASE', key: this.v[0] }; }
+    else if (op === 0x00F6) { this.halted = true; this.waitingForKey = 'ANY_RELEASE_SCHIP'; }
+    else if (op === 0x00FD) { this.width = 10; this.height = 60; this.display.fill(0); }
+    else if (op === 0x00FE) { this.width = 64; this.height = 32; this.display.fill(0); }
+    else if ((op & 0xF000) === 0x1000) this.pc = nnn;
+    else if ((op & 0xF000) === 0x2000) { this.stack.push(this.pc); this.pc = nnn; }
+    else if ((op & 0xF000) === 0x3000) { if (this.v[x] === nn) this.pc += 2; }
+    else if ((op & 0xF000) === 0x4000) { if (this.v[x] !== nn) this.pc += 2; }
+    else if ((op & 0xF00F) === 0x5000) { if (this.v[x] === this.v[y]) this.pc += 2; }
+    else if ((op & 0xF000) === 0x6000) this.v[x] = nn;
+    else if ((op & 0xF000) === 0x7000) this.v[x] = (this.v[x] + nn) & 0xFF;
+    else if ((op & 0xF000) === 0x8000) this.alu(x, y, n);
+    else if ((op & 0xF00F) === 0x9000) { if (this.v[x] !== this.v[y]) this.pc += 2; }
+    else if ((op & 0xF000) === 0xA000) this.i = nnn;
+    else if ((op & 0xF000) === 0xB000) this.pc = (nnn + this.v[0]) & 0xFFFF;
+    else if ((op & 0xF000) === 0xC000) this.v[x] = Math.floor(Math.random() * 256) & nn;
+    else if ((op & 0xF000) === 0xD000) this.draw(x, y, n);
+    else if ((op & 0xF0FF) === 0xE09E) { if (this.keys[this.v[x] & 0xF]) this.pc += 2; }
+    else if ((op & 0xF0FF) === 0xE0A1) { if (!this.keys[this.v[x] & 0xF]) this.pc += 2; }
+    else if ((op & 0xF0FF) === 0xF007) this.v[x] = this.delayTimer;
+    else if ((op & 0xF0FF) === 0xF00A) this.waitingForKey = x;
+    else if ((op & 0xF0FF) === 0xF015) this.delayTimer = this.v[x];
+    else if ((op & 0xF0FF) === 0xF018) this.soundTimer = this.v[x];
+    else if ((op & 0xF0FF) === 0xF01E) this.i = (this.i + this.v[x]) & 0xFFFF;
+    else if ((op & 0xF0FF) === 0xF029) this.i = 0x50 + (this.v[x] & 0xF) * 5;
+    else if ((op & 0xF0FF) === 0xF033) {
+      const val = this.v[x];
+      this.mem[this.i & 0xFFFF] = Math.floor(val / 100);
+      this.mem[(this.i + 1) & 0xFFFF] = Math.floor((val % 100) / 10);
+      this.mem[(this.i + 2) & 0xFFFF] = val % 10;
+    } else if ((op & 0xF0FF) === 0xF055) {
+      for (let idx = 0; idx <= x; idx++) this.mem[(this.i + idx) & 0xFFFF] = this.v[idx];
+      if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
+    } else if ((op & 0xF0FF) === 0xF065) {
+      for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[(this.i + idx) & 0xFFFF];
+      if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
     } else {
       throw new Error(`Op Error: 0x${op.toString(16).toUpperCase()}`);
     }
   }
 
   alu(x, y, mode) {
-    // Group 0x8000 uses a mode nibble to differentiate operations
     if (mode === 0x0) this.v[x] = this.v[y];
     else if (mode === 0x1) this.v[x] |= this.v[y];
     else if (mode === 0x2) this.v[x] &= this.v[y];
@@ -253,7 +195,6 @@ export class Chip8 {
       this.v[0xF] = this.v[x] >= this.v[y] ? 1 : 0;
       this.v[x] = (this.v[x] - this.v[y]) & 0xFF;
     } else if (mode === 0x6) {
-      // Shift Quirk: Some interpreters copy Vy to Vx before shifting
       if (this.quirks.shiftUsesVy) this.v[x] = this.v[y];
       this.v[0xF] = this.v[x] & 1;
       this.v[x] >>= 1;
@@ -271,12 +212,11 @@ export class Chip8 {
     const startX = this.v[xReg] % this.width;
     const startY = this.v[yReg] % this.height;
     this.v[0xF] = 0;
-
     for (let row = 0; row < height; row++) {
       const byte = this.mem[(this.i + row) & 0xFFFF];
       for (let bit = 0; bit < 8; bit++) {
         if ((byte & (0x80 >> bit)) === 0) continue;
-
+        
         const x = this.quirks.drawWraps ? (startX + bit) % this.width : startX + bit;
         const y = this.quirks.drawWraps ? (startY + row) % this.height : startY + row;
         
@@ -341,7 +281,7 @@ export class Chip8 {
     for (let i = 0; i < testCase.cycles; i++) {
       this.cycle();
     }
-
+    
     const results = { passed: true, failures: [] };
     for (const [key, expected] of Object.entries(testCase.expected)) {
       let actual;
