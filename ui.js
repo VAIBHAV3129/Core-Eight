@@ -2,6 +2,7 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
   import { Chip8 } from './cpu.js';
   import { Assembler } from './assembler.js';
 
+
   const dom = {
     root: document.documentElement,
     body: document.body,
