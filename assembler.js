@@ -220,6 +220,7 @@ export class Assembler {
     if (this.constants[k] !== undefined) return this.constants[k];
     if (/^0X[0-9A-F]+/i.test(val)) return parseInt(val, 16);
     if (/^\$[0-9A-F]+/i.test(val)) return parseInt(val.slice(1), 16);
+    if (/^%[01]+$/i.test(val)) return parseInt(val.slice(1), 2);
     if (/^[0-9]+$/.test(val)) return parseInt(val, 10);
     this.errors.push(`Line ${line.line}: Unknown numeric format "${val}"`);
     return 0;
