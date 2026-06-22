@@ -32,6 +32,7 @@ class CoreEightApp {
     }
 
     init() {
+        this.renderer.resize(this.cpu.width, this.cpu.height);
         this.boot();
         this.setupUI();
         this.renderStatic();
@@ -49,8 +50,8 @@ class CoreEightApp {
                 clearInterval(timer);
                 document.body.classList.add('ready');
             }
-            loadBar.style.width = `${progress}%`;
-            loadNum.textContent = `${progress}%`;
+            if (loadBar) loadBar.style.width = `${progress}%`;
+            if (loadNum) loadNum.textContent = `${progress}%`;
         }, 100);
     }
 
@@ -58,17 +59,22 @@ class CoreEightApp {
         document.querySelectorAll('.nav button').forEach(btn => {
             btn.onclick = () => this.switchPanel(btn.dataset.panel);
         });
-        document.querySelector('.brand').onclick = () => this.switchPanel('dashboard');
+        const brand = document.querySelector('.brand');
+        if (brand) brand.onclick = () => this.switchPanel('dashboard');
         
         window.onkeydown = (e) => {
             const key = KEY_MAP[e.key] || KEY_MAP[e.key.toLowerCase()];
-            if (key !== undefined) this.cpu.setKey(key, true);
-            this.sync();
+            if (key !== undefined) {
+                this.cpu.setKey(key, true);
+                this.sync();
+            }
         };
         window.onkeyup = (e) => {
             const key = KEY_MAP[e.key] || KEY_MAP[e.key.toLowerCase()];
-            if (key !== undefined) this.cpu.setKey(key, false);
-            this.sync();
+            if (key !== undefined) {
+                this.cpu.setKey(key, false);
+                this.sync();
+            }
         };
     }
 
@@ -76,7 +82,8 @@ class CoreEightApp {
         this.state.activePanel = id;
         document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+        const panel = document.getElementById(id);
+        if (panel) panel.classList.add('active');
         const btn = document.querySelector(`.nav button[data-panel="${id}"]`);
         if (btn) btn.classList.add('active');
     }
@@ -84,38 +91,46 @@ class CoreEightApp {
     renderStatic() {
         const featGrid = document.getElementById('feature-cards');
         const cardTmpl = document.getElementById('card-template');
-        featGrid.innerHTML = "";
-        FEATURE_DATA.forEach(([t, d]) => {
-            const c = cardTmpl.content.cloneNode(true);
-            c.querySelector('strong').textContent = t;
-            c.querySelector('span').textContent = d;
-            featGrid.appendChild(c);
-        });
+        if (featGrid && cardTmpl) {
+            featGrid.innerHTML = "";
+            FEATURE_DATA.forEach(([t, d]) => {
+                const c = cardTmpl.content.cloneNode(true);
+                c.querySelector('strong').textContent = t;
+                c.querySelector('span').textContent = d;
+                featGrid.appendChild(c);
+            });
+        }
 
         const gameGrid = document.getElementById('game-grid');
-        GAME_DATA.forEach(([t, d]) => {
-            const c = cardTmpl.content.cloneNode(true);
-            c.querySelector('strong').textContent = t;
-            c.querySelector('span').textContent = d;
-            gameGrid.appendChild(c);
-        });
+        if (gameGrid && cardTmpl) {
+            gameGrid.innerHTML = "";
+            GAME_DATA.forEach(([t, d]) => {
+                const c = cardTmpl.content.cloneNode(true);
+                c.querySelector('strong').textContent = t;
+                c.querySelector('span').textContent = d;
+                gameGrid.appendChild(c);
+            });
+        }
 
         const setGrid = document.getElementById('settings-grid');
         const setTmpl = document.getElementById('setting-template');
-        SETTINGS_DATA.forEach(([n, d, k, opts]) => {
-            const r = setTmpl.content.cloneNode(true);
-            r.querySelector('span').innerHTML = `${n}<small>${d}</small>`;
-            const sel = r.querySelector('select');
-            sel.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join("");
-            sel.onchange = (e) => this.applySetting(k, e.target.value);
-            setGrid.appendChild(r);
-        });
+        if (setGrid && setTmpl) {
+            setGrid.innerHTML = "";
+            SETTINGS_DATA.forEach(([n, d, k, opts]) => {
+                const r = setTmpl.content.cloneNode(true);
+                r.querySelector('span').innerHTML = `${n}<small>${d}</small>`;
+                const sel = r.querySelector('select');
+                sel.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join("");
+                sel.onchange = (e) => this.applySetting(k, e.target.value);
+                setGrid.appendChild(r);
+            });
+        }
     }
 
     applySetting(key, val) {
         if (key === 'theme') {
             const m = { "Amber Cathode": "amber", "Matrix Terminal": "matrix", "Cyber-Whacker": "cyber" };
-            document.body.dataset.theme = m[val];
+            document.body.dataset.theme = m[val] || 'amber';
         } else if (key === 'memoryFormat') this.state.memFmt = val;
         else if (key === 'registerFormat') this.state.regFmt = val;
         else if (key === 'pixelated') document.body.classList.toggle('pixelated', val === "On");
@@ -124,7 +139,7 @@ class CoreEightApp {
     }
 
     loadScratch() {
-        const bytes = this.asm.assemble(DEFAULT_ASM);
+        const bytes = this.asm.assemble(DEFAULT_ASM).bytes;
         this.cpu.load(bytes);
     }
 
@@ -218,17 +233,21 @@ class CoreEightApp {
             return `${t.name}: ${res.passed ? "PASS" : "FAIL " + res.failures.join(", ")}`;
         });
         this.printLog(`Tests: ${passed}/${TEST_SUITE.length} Passed`);
-        results.forEach(l => {
-            const d = document.createElement("div");
-            d.className = "log-entry";
-            d.textContent = l;
-            document.getElementById('vm-log').appendChild(d);
-        });
+        const log = document.getElementById('vm-log');
+        if (log) {
+            results.forEach(l => {
+                const d = document.createElement("div");
+                d.className = "log-entry";
+                d.textContent = l;
+                log.appendChild(d);
+            });
+        }
         this.sync();
     }
 
     printLog(msg) {
         const log = document.getElementById('vm-log');
+        if (!log) return;
         log.innerHTML = "";
         this.cpu.history.forEach(e => {
             const d = document.createElement("div");
@@ -247,12 +266,14 @@ class CoreEightApp {
 
     sync() {
         const status = document.getElementById('statusbar');
-        status.innerHTML = [
-            ["State", this.loop ? "Running" : "Paused"],
-            ["PC", `0x${this.cpu.pc.toString(16).toUpperCase().padStart(4, '0')}`],
-            ["Op", `0x${this.cpu.lastOp.toString(16).toUpperCase().padStart(4, '0')}`],
-            ["Clock", `${this.controls.getSpeed()} Hz`]
-        ].map(([l, v]) => `<div class="status-item"><span class="status-label">${l}</span><span class="status-value">${v}</span></div>`).join("");
+        if (status) {
+            status.innerHTML = [
+                ["State", this.loop ? "Running" : "Paused"],
+                ["PC", `0x${this.cpu.pc.toString(16).toUpperCase().padStart(4, '0')}`],
+                ["Op", `0x${this.cpu.lastOp.toString(16).toUpperCase().padStart(4, '0')}`],
+                ["Clock", `${this.controls.getSpeed()} Hz`]
+            ].map(([l, v]) => `<div class="status-item"><span class="status-label">${l}</span><span class="status-value">${v}</span></div>`).join("");
+        }
 
         this.renderer.draw(this.cpu.display, this.cpu.width, this.cpu.height);
         this.controls.updateTimers();
@@ -261,4 +282,6 @@ class CoreEightApp {
     }
 }
 
-new CoreEightApp();
+window.addEventListener('DOMContentLoaded', () => {
+    new CoreEightApp();
+});
