@@ -1,14 +1,15 @@
 export class ScreenRenderer {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
-        this.pixelSize = 1;
+        if (!this.canvas) throw new Error(`Canvas element #${canvasId} not found`);
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
         this.color = '#6dffba';
     }
 
     resize(width, height) {
         this.canvas.width = width;
         this.canvas.height = height;
+        this.clear();
     }
 
     clear() {
