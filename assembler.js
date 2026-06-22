@@ -1,23 +1,25 @@
 export class Assembler {
   constructor(origin = 0x200) {
     this.origin = origin;
-    this.labels = {};
-    this.constants = {};
+    this.symbols = {
+      labels: {},
+      constants: {}
+    };
     this.errors = [];
     this.lines = [];
   }
 
   assemble(source) {
-    this.labels = {};
-    this.constants = {};
+    this.symbols.labels = {};
+    this.symbols.constants = {};
     this.errors = [];
     this.lines = this.clean(source);
     this.firstPass();
     const bytes = this.secondPass();
     return {
       bytes: Uint8Array.from(bytes),
-      labels: this.labels,
-      constants: this.constants,
+      labels: this.symbols.labels,
+      constants: this.symbols.constants,
       errors: this.errors
     };
   }
@@ -37,7 +39,7 @@ export class Assembler {
         const parts = text.split(/\s+EQU\s+/i);
         const name = parts[0].trim().toUpperCase();
         const valStr = parts[1].trim();
-        this.constants[name] = this.num(valStr, line);
+        this.symbols.constants[name] = this.num(valStr, line);
         return;
       }
 
@@ -86,7 +88,7 @@ export class Assembler {
       this.errors.push(`Line ${line.line}: Invalid label name "${label}"`);
       return "";
     }
-    this.labels[label.toUpperCase()] = pc;
+    this.symbols.labels[label.toUpperCase()] = pc;
     return line.text.slice(colon + 1).trim();
   }
 
@@ -216,8 +218,8 @@ export class Assembler {
       return 0;
     }
     const k = val.toUpperCase();
-    if (this.labels[k] !== undefined) return this.labels[k];
-    if (this.constants[k] !== undefined) return this.constants[k];
+    if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
+    if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
     if (/^0X[0-9A-F]+/i.test(val)) return parseInt(val, 16);
     if (/^\$[0-9A-F]+/i.test(val)) return parseInt(val.slice(1), 16);
     if (/^%[01]+$/i.test(val)) return parseInt(val.slice(1), 2);
