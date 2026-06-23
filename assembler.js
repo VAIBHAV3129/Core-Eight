@@ -1,4 +1,14 @@
 export class Assembler {
+  static ERR_CODES = {
+    INVALID_LABEL: 'E001',
+    UNKNOWN_OP: 'E002',
+    INVALID_REG: 'E003',
+    OUT_OF_RANGE: 'E004',
+    MISSING_VAL: 'E005',
+    INVALID_FMT: 'E006',
+    CIRCULAR_REF: 'E007'
+  };
+
   constructor(origin = 0x200) {
     this.origin = origin;
     this.symbols = {
@@ -26,6 +36,10 @@ export class Assembler {
     };
   }
 
+  addError(line, col, message, code) {
+    this.errors.push({ line, col, message, code });
+  }
+
   clean(source) {
     return source.split("\n").map((raw, index) => {
       const text = raw.split(";")[0].trim();
@@ -41,8 +55,9 @@ export class Assembler {
         const parts = text.split(/\s+EQU\s+/i);
         const name = parts[0].trim().toUpperCase();
         const valStr = parts[1].trim();
+        const col = text.indexOf(valStr) + 1;
         this.rawConstants[name] = valStr;
-        this.resolveSymbol(name);
+        this.resolveSymbol(name, line, col);
         return;
       }
 
@@ -57,9 +72,9 @@ export class Assembler {
     });
   }
 
-  resolveSymbol(name, visited = new Set()) {
+  resolveSymbol(name, line = null, col = 0, visited = new Set()) {
     if (visited.has(name)) {
-      this.errors.push(`Circular reference detected in constant: ${name}`);
+      this.addError(line?.line || 0, col, `Circular reference: ${name}`, Assembler.ERR_CODES.CIRCULAR_REF);
       return 0;
     }
 
@@ -70,16 +85,16 @@ export class Assembler {
     if (raw === undefined) return undefined;
 
     visited.add(name);
-    const value = this.evaluateRaw(raw, visited);
+    const value = this.evaluateRaw(raw, visited, line, col);
     this.symbols.constants[name] = value;
     return value;
   }
 
-  evaluateRaw(raw, visited) {
+  evaluateRaw(raw, visited, line, col) {
     const k = raw.toUpperCase();
     if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
     if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
-    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, visited);
+    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, line, col, visited);
     
     if (/^0X[0-9A-F]+/i.test(raw)) return parseInt(raw, 16);
     if (/^\$[0-9A-F]+/i.test(raw)) return parseInt(raw.slice(1), 16);
@@ -120,7 +135,7 @@ export class Assembler {
     if (colon === -1) return line.text;
     const label = line.text.slice(0, colon).trim();
     if (!/^[A-Z_][A-Z0-9_]*$/i.test(label)) {
-      this.errors.push(`Line ${line.line}: Invalid label name "${label}"`);
+      this.addError(line.line, 1, `Invalid label: "${label}"`, Assembler.ERR_CODES.INVALID_LABEL);
       return "";
     }
     this.symbols.labels[label.toUpperCase()] = pc;
@@ -178,7 +193,7 @@ export class Assembler {
     if (op === "SKP") return 0xE09E | (this.reg(parts[1], line) << 8);
     if (op === "SKNP") return 0xE0A1 | (this.reg(parts[1], line) << 8);
 
-    this.errors.push(`Line ${line.line}: Unknown instruction "${op}"`);
+    this.addError(line.line, 1, `Unknown instruction "${op}"`, Assembler.ERR_CODES.UNKNOWN_OP);
     return null;
   }
 
@@ -207,7 +222,7 @@ export class Assembler {
     if (a === "B") return 0xF033 | (this.reg(parts[2], line) << 8);
     if (a === "[I]") return 0xF055 | (this.reg(parts[2], line) << 8);
 
-    this.errors.push(`Line ${line.line}: Invalid LD parameters`);
+    this.addError(line.line, 1, `Invalid LD parameters`, Assembler.ERR_CODES.INVALID_REG);
     return null;
   }
 
@@ -229,7 +244,8 @@ export class Assembler {
 
   reg(val, line) {
     if (!this.isReg(val)) {
-      this.errors.push(`Line ${line.line}: Invalid register "${val}". Expected V0-VF`);
+      const col = line.text.indexOf(val) + 1;
+      this.addError(line.line, col, `Invalid register "${val}"`, Assembler.ERR_CODES.INVALID_REG);
       return 0;
     }
     return parseInt(val.slice(1), 16);
@@ -237,30 +253,38 @@ export class Assembler {
 
   byte(val, line) {
     const n = this.num(val, line);
-    if (n < 0 || n > 0xFF) this.errors.push(`Line ${line.line}: Value ${val} out of 8-bit range (0-255)`);
+    if (n < 0 || n > 0xFF) {
+      const col = line.text.indexOf(val) + 1;
+      this.addError(line.line, col, `Value ${val} out of 8-bit range`, Assembler.ERR_CODES.OUT_OF_RANGE);
+    }
     return n & 0xFF;
   }
 
   addr(val, line) {
     const n = this.num(val, line);
-    if (n < 0 || n > 0xFFF) this.errors.push(`Line ${line.line}: Address ${val} out of 12-bit range (0-4095)`);
+    if (n < 0 || n > 0xFFF) {
+      const col = line.text.indexOf(val) + 1;
+      this.addError(line.line, col, `Address ${val} out of 12-bit range`, Assembler.ERR_CODES.OUT_OF_RANGE);
+    }
     return n & 0xFFF;
   }
 
   num(val, line) {
     if (!val) {
-      this.errors.push(`Line ${line.line}: Missing value`);
+      this.addError(line.line, 1, `Missing value`, Assembler.ERR_CODES.MISSING_VAL);
       return 0;
     }
     const k = val.toUpperCase();
     if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
     if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
-    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k);
+    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, line);
     if (/^0X[0-9A-F]+/i.test(val)) return parseInt(val, 16);
     if (/^\$[0-9A-F]+/i.test(val)) return parseInt(val.slice(1), 16);
     if (/^%[01]+$/i.test(val)) return parseInt(val.slice(1), 2);
     if (/^[0-9]+$/.test(val)) return parseInt(val, 10);
-    this.errors.push(`Line ${line.line}: Unknown numeric format "${val}"`);
+    
+    const col = line.text.indexOf(val) + 1;
+    this.addError(line.line, col, `Unknown numeric format "${val}"`, Assembler.ERR_CODES.INVALID_FMT);
     return 0;
   }
 }
