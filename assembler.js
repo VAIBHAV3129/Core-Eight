@@ -6,7 +6,9 @@ export class Assembler {
     OUT_OF_RANGE: 'E004',
     MISSING_VAL: 'E005',
     INVALID_FMT: 'E006',
-    CIRCULAR_REF: 'E007'
+    CIRCULAR_REF: 'E007',
+    MACRO_NOT_FOUND: 'E008',
+    MACRO_UNCLOSED: 'E009'
   };
 
   constructor(origin = 0x200) {
@@ -16,6 +18,7 @@ export class Assembler {
       constants: {}
     };
     this.rawConstants = {};
+    this.macros = {};
     this.errors = [];
     this.lines = [];
   }
@@ -24,8 +27,10 @@ export class Assembler {
     this.symbols.labels = {};
     this.symbols.constants = {};
     this.rawConstants = {};
+    this.macros = {};
     this.errors = [];
     this.lines = this.clean(source);
+    this.preprocess();
     this.firstPass();
     const bytes = this.secondPass();
     return {
@@ -45,6 +50,55 @@ export class Assembler {
       const text = raw.split(";")[0].trim();
       return { raw, text, line: index + 1 };
     }).filter((line) => line.text.length > 0);
+  }
+
+  preprocess() {
+    const expanded = [];
+    for (let i = 0; i < this.lines.length; i++) {
+      const line = this.lines[i];
+      const text = line.text;
+      const upper = text.toUpperCase();
+
+      if (upper.startsWith("MACRO ")) {
+        const parts = text.split(/\s+/);
+        const name = parts[1].toUpperCase();
+        const args = parts.slice(2).map(a => a.replace(/,$/, "").toUpperCase());
+        const body = [];
+        let j = i + 1;
+
+        while (j < this.lines.length && !this.lines[j].text.toUpperCase().startsWith("ENDMACRO")) {
+          body.push(this.lines[j].text);
+          j++;
+        }
+
+        if (j === this.lines.length) {
+          this.addError(line.line, 1, `Macro ${name} not closed`, Assembler.ERR_CODES.MACRO_UNCLOSED);
+        }
+
+        this.macros[name] = { args, body };
+        i = j;
+        continue;
+      }
+
+      const firstWord = upper.split(/\s+/)[0];
+      if (this.macros[firstWord]) {
+        const macro = this.macros[firstWord];
+        const callArgs = text.slice(firstWord.length).trim().split(/\s+|,/).filter(Boolean);
+        
+        macro.body.forEach(bodyLine => {
+          let expandedLine = bodyLine;
+          macro.args.forEach((arg, idx) => {
+            const val = callArgs[idx] || "0";
+            expandedLine = expandedLine.replace(new RegExp(`\\b${arg}\\b`, 'g'), val);
+          });
+          expanded.push({ raw: expandedLine, text: expandedLine, line: line.line });
+        });
+        continue;
+      }
+
+      expanded.push(line);
+    }
+    this.lines = expanded;
   }
 
   firstPass() {
