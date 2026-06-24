@@ -8,7 +8,8 @@ export class Assembler {
     INVALID_FMT: 'E006',
     CIRCULAR_REF: 'E007',
     MACRO_NOT_FOUND: 'E008',
-    MACRO_UNCLOSED: 'E009'
+    MACRO_UNCLOSED: 'E009',
+    EXPR_ERROR: 'E010'
   };
 
   constructor(origin = 0x200) {
@@ -145,17 +146,7 @@ export class Assembler {
   }
 
   evaluateRaw(raw, visited, line, col) {
-    const k = raw.toUpperCase();
-    if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
-    if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
-    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, line, col, visited);
-    
-    if (/^0X[0-9A-F]+/i.test(raw)) return parseInt(raw, 16);
-    if (/^\$[0-9A-F]+/i.test(raw)) return parseInt(raw.slice(1), 16);
-    if (/^%[01]+$/i.test(raw)) return parseInt(raw.slice(1), 2);
-    if (/^[0-9]+$/.test(raw)) return parseInt(raw, 10);
-
-    return 0;
+    return this.evaluateExpression(raw, line, col, visited);
   }
 
   secondPass() {
@@ -194,6 +185,23 @@ export class Assembler {
     }
     this.symbols.labels[label.toUpperCase()] = pc;
     return line.text.slice(colon + 1).trim();
+  }
+
+  evaluateExpression(expr, line, col, visited = new Set()) {
+    const terms = expr.match(/[+-]?\s*[^+-]+/g);
+    if (!terms) return 0;
+
+    let total = 0;
+    terms.forEach(term => {
+      const trimmed = term.trim();
+      const isNegative = trimmed.startsWith('-');
+      const valStr = isNegative ? trimmed.slice(1).trim() : trimmed;
+      
+      const value = this.num(valStr, line, visited);
+      total += isNegative ? -value : value;
+    });
+
+    return total;
   }
 
   encode(text, line) {
@@ -323,15 +331,20 @@ export class Assembler {
     return n & 0xFFF;
   }
 
-  num(val, line) {
+  num(val, line, visited = new Set()) {
     if (!val) {
       this.addError(line.line, 1, `Missing value`, Assembler.ERR_CODES.MISSING_VAL);
       return 0;
     }
+
+    if (val.includes('+') || val.includes('-')) {
+      return this.evaluateExpression(val, line, 1, visited);
+    }
+
     const k = val.toUpperCase();
     if (this.symbols.labels[k] !== undefined) return this.symbols.labels[k];
     if (this.symbols.constants[k] !== undefined) return this.symbols.constants[k];
-    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, line);
+    if (this.rawConstants[k] !== undefined) return this.resolveSymbol(k, line, 1, visited);
     if (/^0X[0-9A-F]+/i.test(val)) return parseInt(val, 16);
     if (/^\$[0-9A-F]+/i.test(val)) return parseInt(val.slice(1), 16);
     if (/^%[01]+$/i.test(val)) return parseInt(val.slice(1), 2);
