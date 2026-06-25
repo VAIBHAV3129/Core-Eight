@@ -297,7 +297,27 @@ export class Assembler {
   }
 
   parseDb(text, line) {
-    return text.slice(3).split(",").map((part) => this.byte(part.trim(), line));
+    const result = [];
+    const parts = text.slice(3).split(",");
+
+    parts.forEach(part => {
+      const trimmed = part.trim();
+      if (!trimmed) return;
+
+      if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+        const str = trimmed.slice(1, -1);
+        for (let i = 0; i < str.length; i++) result.push(str.charCodeAt(i) & 0xFF);
+      } else if (trimmed.includes('*')) {
+        const [valStr, countStr] = trimmed.split('*').map(s => s.trim());
+        const val = this.byte(valStr, line);
+        const count = this.num(countStr, line);
+        for (let i = 0; i < count; i++) result.push(val);
+      } else {
+        result.push(this.byte(trimmed, line));
+      }
+    });
+
+    return result;
   }
 
   isReg(val) {
