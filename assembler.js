@@ -34,11 +34,25 @@ export class Assembler {
     this.preprocess();
     this.firstPass();
     const bytes = this.secondPass();
+    
     return {
       bytes: Uint8Array.from(bytes),
       labels: this.symbols.labels,
       constants: this.symbols.constants,
-      errors: this.errors
+      errors: this.errors,
+      symbolMap: this.generateSymbolMap()
+    };
+  }
+
+  generateSymbolMap() {
+    const addressMap = {};
+    for (const [name, addr] of Object.entries(this.symbols.labels)) {
+      addressMap[addr] = name;
+    }
+    return {
+      labels: { ...this.symbols.labels },
+      constants: { ...this.symbols.constants },
+      addressMap
     };
   }
 
