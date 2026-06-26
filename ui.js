@@ -1,6 +1,6 @@
 import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_DATA, TEST_SUITE } from './data.js';
 import { Chip8 } from './cpu.js';
-import { Assembler } from './assembler.js';
+import { Assembler, Disassembler } from './assembler.js';
 
 const dom = {
   root: document.documentElement,
@@ -33,6 +33,7 @@ const dom = {
     testVm: document.querySelector("#test-vm"),
     asm: document.querySelector("#assemble-code"),
     load: document.querySelector("#load-assembled"),
+    disasm: document.querySelector("#disassemble-rom"),
     exp: document.querySelector("#export-rom"),
     imp: document.querySelector("#import-rom"),
     addBp: document.querySelector("#add-bp"),
@@ -56,6 +57,7 @@ const dom = {
 
 const chip = new Chip8();
 const asm = new Assembler();
+const dis = new Disassembler();
 let progress = 0;
 let loop = null;
 let lastTime = 0;
@@ -132,6 +134,7 @@ function initUI() {
   dom.btns.testVm.onclick = runSystemTests;
   dom.btns.asm.onclick = asmEditor;
   dom.btns.load.onclick = loadAsm;
+  dom.btns.disasm.onclick = disassembleRom;
   dom.btns.exp.onclick = exportRom;
   dom.btns.imp.onclick = () => dom.btns.imp.click();
   dom.btns.imp.onchange = importRom;
@@ -216,6 +219,17 @@ function loadAsm() {
   sync();
 }
 
+function disassembleRom() {
+  if (!bin) {
+    dom.term.textContent = "Error: No binary loaded to disassemble.";
+    return;
+  }
+  const source = dis.disassemble(bin);
+  dom.editor.value = source;
+  dom.editor.oninput();
+  dom.term.textContent = "ROM disassembled successfully.";
+}
+
 function exportRom() {
   if (!bin) {
     alert("Please assemble a program first.");
@@ -250,6 +264,8 @@ function importRom(e) {
 
 function runSystemTests() {
   pause();
+  chip.history = [];
+  
   let passedCount = 0;
   const results = TEST_SUITE.map(test => {
     const res = chip.testRunner(test);
@@ -264,6 +280,9 @@ function runSystemTests() {
     entry.textContent = line;
     dom.log.appendChild(entry);
   });
+  
+  chip.reset();
+  loadScratch();
   sync();
 }
 
