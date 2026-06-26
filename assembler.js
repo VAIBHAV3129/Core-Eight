@@ -389,3 +389,73 @@ export class Assembler {
     return 0;
   }
 }
+
+export class Disassembler {
+  constructor() {
+    this.fmtHex = (v, w = 2) => v.toString(16).toUpperCase().padStart(w, "0");
+  }
+
+  disassemble(bytes, start = 0x200) {
+    const output = [];
+    for (let pc = start; pc < bytes.length; pc += 2) {
+      if (pc + 1 >= bytes.length) break;
+      const op = (bytes[pc] << 8) | bytes[pc + 1];
+      const decoded = this.decode(op);
+      output.push(`${this.fmtHex(pc, 4)}: 0x${this.fmtHex(op, 4)} ${decoded}`);
+    }
+    return output.join("\n");
+  }
+
+  decode(op) {
+    const x = (op & 0x0F00) >> 8;
+    const y = (op & 0x00F0) >> 4;
+    const n = op & 0x000F;
+    const nn = op & 0x00FF;
+    const nnn = op & 0x0FFF;
+    const top = op & 0xF000;
+
+    if (op === 0x00E0) return "CLS";
+    if (op === 0x00EE) return "RET";
+    if (op === 0x00C0) return "HLT_K";
+    if (op === 0x00C2) return "HLT_P";
+    if (op === 0x00C4) return "HLT_R";
+    if (op === 0x00C6) return "HIRES";
+    if (op === 0x00C8) return "LORES";
+    if (op === 0x00CD) return "WAITK";
+    if (op === 0x00CF) return "WAITR";
+    if (op === 0x00F0) return "WAITK_V0";
+    if (op === 0x00F2) return "LORES";
+    if (op === 0x00F4) return "WAITR_V0";
+    if (op === 0x00F6) return "WAITR_ANY";
+    if (op === 0x00FD) return "RESOL_10x60";
+    if (op === 0x00FE) return "RESOL_64x32";
+    if (top === 0x1000) return `JP 0x${this.fmtHex(nnn, 3)}`;
+    if (top === 0x2000) return `CALL 0x${this.fmtHex(nnn, 3)}`;
+    if (top === 0x3000) return `SE V${x}, 0x${this.fmtHex(nn, 2)}`;
+    if (top === 0x4000) return `SNE V${x}, 0x${this.fmtHex(nn, 2)}`;
+    if ((op & 0xF00F) === 0x5000) return `SE V${x}, V${y}`;
+    if (top === 0x6000) return `LD V${x}, 0x${this.fmtHex(nn, 2)}`;
+    if (top === 0x7000) return `ADD V${x}, 0x${this.fmtHex(nn, 2)}`;
+    if (top === 0x8000) {
+      const aluOps = ["LD", "OR", "AND", "XOR", "ADD", "SUB", "SHR", "SUBN", "", "", "", "", "", "", "SHL"];
+      return `${aluOps[n]} V${x}, V${y}`;
+    }
+    if ((op & 0xF00F) === 0x9000) return `SNE V${x}, V${y}`;
+    if (top === 0xA000) return `LD I, 0x${this.fmtHex(nnn, 3)}`;
+    if (top === 0xB000) return `JP V0, 0x${this.fmtHex(nnn, 3)}`;
+    if (top === 0xC000) return `RND V${x}, 0x${this.fmtHex(nn, 2)}`;
+    if (top === 0xD000) return `DRW V${x}, V${y}, ${n}`;
+    if ((op & 0xF0FF) === 0xE09E) return `SKP V${x}`;
+    if ((op & 0xF0FF) === 0xE0A1) return `SKNP V${x}`;
+    if ((op & 0xF0FF) === 0xF007) return `LD V${x}, DT`;
+    if ((op & 0xF0FF) === 0xF00A) return `LD V${x}, K`;
+    if ((op & 0xF0FF) === 0xF015) return `LD DT, V${x}`;
+    if ((op & 0xF0FF) === 0xF018) return `LD ST, V${x}`;
+    if ((op & 0xF0FF) === 0xF01E) return `ADD I, V${x}`;
+    if ((op & 0xF0FF) === 0xF029) return `LD F, V${x}`;
+    if ((op & 0xF0FF) === 0xF033) return `LD B, V${x}`;
+    if ((op & 0xF0FF) === 0xF055) return `LD [I], V${x}`;
+    if ((op & 0xF0FF) === 0xF065) return `LD V${x}, [I]`;
+    return `UNKNOWN_OP 0x${this.fmtHex(op, 4)}`;
+  }
+}
