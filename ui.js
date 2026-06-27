@@ -52,7 +52,9 @@ const dom = {
   mvalIn: document.querySelector("#mem-val-input"),
   stackView: document.querySelector("#stack-view"),
   inspector: document.querySelector("#op-inspector"),
-  inspectorBody: document.querySelector("#inspector-body")
+  inspectorBody: document.querySelector("#inspector-body"),
+  scrubber: document.querySelector("#cycle-scrubber"),
+  cycleVal: document.querySelector("#cycle-val")
 };
 
 const chip = new Chip8();
@@ -171,6 +173,14 @@ function initUI() {
   dom.editor.oninput = () => {
     const lines = dom.editor.value.split("\n");
     dom.lines.innerHTML = lines.map((_, i) => i + 1).join("<br>");
+  };
+
+  dom.scrubber.oninput = (e) => {
+    const idx = parseInt(e.target.value);
+    if (chip.rewind(idx)) {
+      dom.cycleVal.textContent = idx;
+      sync();
+    }
   };
 
   window.onkeydown = (e) => {
@@ -481,6 +491,12 @@ function sync() {
   renderStack();
   dom.timers.dt.textContent = chip.delayTimer;
   dom.timers.st.textContent = chip.soundTimer;
+  
+  dom.scrubber.max = Math.max(0, chip.stateHistory.length - 1);
+  if (!loop) {
+    dom.scrubber.value = chip.stateHistory.length - 1;
+    dom.cycleVal.textContent = dom.scrubber.value;
+  }
 }
 
 function renderStatus() {
