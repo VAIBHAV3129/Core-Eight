@@ -16,6 +16,7 @@ export class Chip8 {
     this.halted = false;
     this.quirks = { shiftUsesVy: false, incrementI: true, drawWraps: true };
     this.history = [];
+    this.stateHistory = [];
     this.reset();
   }
 
@@ -36,6 +37,7 @@ export class Chip8 {
     this.waitingForKey = null;
     this.halted = false;
     this.history = [];
+    this.stateHistory = [];
     this.prevV.fill(0);
     this.mem.set(FONT_SET, 0x50);
   }
@@ -61,6 +63,8 @@ export class Chip8 {
     if (this.waitingForKey !== null) return "waiting";
     if (this.bps.has(this.pc)) return "BREAKPOINT_HIT";
 
+    this.snapshot();
+
     const op = this.fetch();
     const desc = this.describe(op);
     const pcBefore = this.pc;
@@ -79,9 +83,37 @@ export class Chip8 {
       desc: desc
     });
 
-    if (this.history.length > 50) this.history.shift();
+    if (this.history.length > 1000) this.history.shift();
+    if (this.stateHistory.length > 1000) this.stateHistory.shift();
 
     return desc;
+  }
+
+  snapshot() {
+    this.stateHistory.push({
+      v: new Uint8Array(this.v),
+      i: this.i,
+      pc: this.pc,
+      stack: [...this.stack],
+      delayTimer: this.delayTimer,
+      soundTimer: this.soundTimer,
+      cycles: this.cycles
+    });
+  }
+
+  rewind(cycleIndex) {
+    if (cycleIndex < 0 || cycleIndex >= this.stateHistory.length) return false;
+    
+    const state = this.stateHistory[cycleIndex];
+    this.v.set(state.v);
+    this.i = state.i;
+    this.pc = state.pc;
+    this.stack = [...state.stack];
+    this.delayTimer = state.delayTimer;
+    this.soundTimer = state.soundTimer;
+    this.cycles = state.cycles;
+    
+    return true;
   }
 
   checkWatches() {
@@ -278,8 +310,13 @@ export class Chip8 {
   testRunner(testCase) {
     this.reset();
     this.load(testCase.bin);
-    for (let i = 0; i < testCase.cycles; i++) {
-      this.cycle();
+    
+    try {
+      for (let i = 0; i < testCase.cycles; i++) {
+        this.cycle();
+      }
+    } catch (e) {
+      return { passed: false, failures: [`Execution Crash: ${e.message}`] };
     }
     
     const results = { passed: true, failures: [] };
@@ -288,6 +325,9 @@ export class Chip8 {
       if (key.startsWith('V')) actual = this.v[parseInt(key.slice(1), 16)];
       else if (key === 'PC') actual = this.pc;
       else if (key === 'I') actual = this.i;
+      else if (key === 'width') actual = this.width;
+      else if (key === 'height') actual = this.height;
+      else if (key === 'halted') actual = this.halted;
       
       if (actual !== expected) {
         results.passed = false;
