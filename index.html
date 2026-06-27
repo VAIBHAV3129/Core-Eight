@@ -84,6 +84,11 @@
                   <h2 class="section-label">Execution Timeline</h2>
                   <button type="button" id="log-clear" class="control-button" style="font-size: 0.7rem; padding: 4px 8px;">Clear</button>
                 </div>
+                <div class="scrub-row" style="display:flex; align-items:center; gap:12px; margin-bottom:12px; color:var(--muted); font-size:0.8rem;">
+                  <span>SCRUB:</span>
+                  <input type="range" id="cycle-scrubber" min="0" max="0" value="0" style="flex:1; accent-color:var(--red);">
+                  <span id="cycle-val">0</span>
+                </div>
                 <pre id="vm-log"></pre>
               </section>
             </section>
