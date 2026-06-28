@@ -185,12 +185,15 @@
   .status-label { display: block; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
   .status-value { display: block; margin-top: 8px; color: var(--green); font-weight: 700; }
 
+
   .workspace { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 24px; padding-bottom: 48px; }
   .panel { display: none; padding: 32px; min-height: 520px; }
   .panel.active { display: block; }
   .panel-title { margin: 0 0 8px; color: var(--green); text-transform: uppercase; letter-spacing: 0.15em; font-size:
   clamp(1.5rem, 3vw, 2rem); }
   .panel-sub { margin: 0 0 32px; color: var(--muted); line-height: 1.6; font-size: 1rem; }
+
+
 
   .dashboard-layout { display: grid; grid-template-columns: 65% 35%; gap: 24px; margin-top: 24px; }
   .work-surface { border: 1px solid rgba(255, 224, 163, 0.2); border-radius: 8px; background:
@@ -204,6 +207,7 @@
   .timer-box { border: 1px solid rgba(255, 224, 163, 0.2); padding: 16px; background: rgba(0,0,0,0.2); }
   .timer-box span { display: block; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; }
   .timer-box strong { display: block; margin-top: 8px; color: var(--green); font-size: 1.2rem; }
+
 
   .card-grid, .game-grid, .settings-grid { display: grid; gap: 16px; margin-top: 24px; }
   .card-grid, .settings-grid { grid-template-columns: repeat(2, 1fr); }
@@ -245,6 +249,7 @@
     line-height: 1.5;
   }
 
+
   .log-entry { cursor: pointer; transition: background 0.2s; }
   .log-entry:hover { background: rgba(255, 42, 22, 0.15); color: #fff; }
 
@@ -267,6 +272,7 @@
   .byte.pc { border-color: #ffe66d; color: #ffe66d; }
   .byte.read { background: rgba(109, 255, 186, 0.2); color: var(--green); }
   .byte.breakpoint { border-color: var(--red); color: var(--red); background: rgba(255, 42, 22, 0.1); }
+
 
   .debug-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
   .register { padding: 12px; border: 1px solid rgba(255, 224, 163, 0.2); background: rgba(0,0,0,0.2); display: flex;
