@@ -392,11 +392,17 @@ function printLog(msg = lastMsg) {
   dom.log.innerHTML = "";
   dom.log.textContent = `${msg}\n${"-".repeat(30)}\n`;
 
-  chip.history.forEach(entry => {
+  chip.history.forEach((entry, idx) => {
     const line = document.createElement("div");
     line.className = "log-entry";
     line.textContent = `[${entry.cycle}] 0x${fmtHex(entry.pc, 4)} | 0x${fmtHex(entry.op, 4)} ${entry.desc}`;
-    line.onclick = () => showInspector(entry);
+    line.onclick = () => {
+      showInspector(entry);
+      if (chip.rewind(idx)) {
+        dom.cycleVal.textContent = idx;
+        sync();
+      }
+    };
     dom.log.appendChild(line);
   });
   dom.log.scrollTop = dom.log.scrollHeight;
