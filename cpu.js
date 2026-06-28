@@ -9,7 +9,7 @@ export class Chip8 {
     this.display = new Uint8Array(128 * 64);
     this.keys = new Uint8Array(16);
     this.stack = [];
-    this.bps = new Set();
+    this.bps = new Map();
     this.watchpoints = new Set();
     this.prevV = new Uint8Array(16);
     this.waitingForKey = null;
@@ -40,6 +40,7 @@ export class Chip8 {
     this.stateHistory = [];
     this.prevV.fill(0);
     this.mem.set(FONT_SET, 0x50);
+    this.bps.clear();
   }
 
   setQuirk(key, value) {
@@ -61,7 +62,13 @@ export class Chip8 {
   cycle() {
     if (this.halted) return "HALTED";
     if (this.waitingForKey !== null) return "waiting";
-    if (this.bps.has(this.pc)) return "BREAKPOINT_HIT";
+    
+    if (this.bps.has(this.pc)) {
+      const condition = this.bps.get(this.pc);
+      if (condition === null || this.evaluateCondition(condition)) {
+        return "BREAKPOINT_HIT";
+      }
+    }
 
     this.snapshot();
 
@@ -87,6 +94,19 @@ export class Chip8 {
     if (this.stateHistory.length > 1000) this.stateHistory.shift();
 
     return desc;
+  }
+
+  evaluateCondition(condition) {
+    try {
+      const sanitized = condition
+        .replace(/V([0-9A-F])/gi, (_, id) => `this.v[${parseInt(id, 16)}]`)
+        .replace(/\bI\b/g, 'this.i')
+        .replace(/\bPC\b/g, 'this.pc');
+      
+      return new Function(`return ${sanitized}`).call(this);
+    } catch (e) {
+      return false;
+    }
   }
 
   snapshot() {
