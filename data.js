@@ -70,7 +70,7 @@ export const TEST_SUITE = [
     name: "Addition V0+V1",
     bin: new Uint8Array([0x60, 0x0A, 0x61, 0x14, 0x80, 0x14]),
     cycles: 3,
-    expected: { "V0": 24 }
+    expected: { "V0": 30 }
   },
   {
     name: "ADD Overflow",
@@ -80,7 +80,7 @@ export const TEST_SUITE = [
   },
   {
     name: "SUB Underflow",
-    bin: new Uint8Array([0x60, 0x00, 0x61, 0x01, 0x80, 0x50]),
+    bin: new Uint8Array([0x60, 0x00, 0x61, 0x01, 0x80, 0x51]),
     cycles: 3,
     expected: { "V0": 255, "VF": 0 }
   },
