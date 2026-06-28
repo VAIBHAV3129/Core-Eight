@@ -97,7 +97,8 @@ export class Chip8 {
       stack: [...this.stack],
       delayTimer: this.delayTimer,
       soundTimer: this.soundTimer,
-      cycles: this.cycles
+      cycles: this.cycles,
+      display: new Uint8Array(this.display)
     });
   }
 
@@ -112,6 +113,7 @@ export class Chip8 {
     this.delayTimer = state.delayTimer;
     this.soundTimer = state.soundTimer;
     this.cycles = state.cycles;
+    this.display.set(state.display);
     
     return true;
   }
