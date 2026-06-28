@@ -45,6 +45,7 @@ const dom = {
     closeInspector: document.querySelector("#close-inspector")
   },
   bpIn: document.querySelector("#bp-input"),
+  bpCondIn: document.querySelector("#bp-cond-input"),
   bpList: document.querySelector("#bp-list"),
   watchIn: document.querySelector("#watch-input"),
   watchList: document.querySelector("#watch-list"),
@@ -145,7 +146,13 @@ function initUI() {
 
   dom.btns.addBp.onclick = () => {
     const a = parseInt(dom.bpIn.value, 16);
-    if (!isNaN(a)) { chip.bps.add(a); dom.bpIn.value = ""; sync(); }
+    const cond = dom.bpCondIn.value.trim() || null;
+    if (!isNaN(a)) {
+      chip.bps.set(a, cond);
+      dom.bpIn.value = "";
+      dom.bpCondIn.value = "";
+      sync();
+    }
   };
 
   dom.btns.addWatch.onclick = () => {
@@ -590,10 +597,10 @@ function renderKeys() {
 
 function renderBPs() {
   dom.bpList.innerHTML = "";
-  chip.bps.forEach(a => {
+  chip.bps.forEach((cond, a) => {
     const c = document.createElement("span");
     c.className = "bp-chip";
-    c.textContent = `0x${fmtHex(a, 4)} ✕`;
+    c.textContent = `${fmtHex(a, 4)} ${cond ? `(${cond})` : ""} ✕`;
     c.onclick = () => { chip.bps.delete(a); sync(); };
     dom.bpList.appendChild(c);
   });
