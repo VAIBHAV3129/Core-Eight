@@ -80,7 +80,7 @@ export const TEST_SUITE = [
   },
   {
     name: "SUB Underflow",
-    bin: new Uint8Array([0x60, 0x00, 0x61, 0x01, 0x80, 0x51]),
+    bin: new Uint8Array([0x60, 0x00, 0x61, 0x01, 0x80, 0x15]),
     cycles: 3,
     expected: { "V0": 255, "VF": 0 }
   },
