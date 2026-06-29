@@ -571,7 +571,7 @@ function renderMem() {
   }
   const off = state.memOff;
   for (let i = 0; i < cells.length; i++) {
-    const a = (off + i) + 0; // logic simplified
+    const a = (off + i) & 0xFFFF;
     cells[i].textContent = valStr(chip.mem[a], state.memFmt);
     cells[i].className = "byte";
     if (a === chip.pc) cells[i].classList.add("pc");
@@ -598,13 +598,13 @@ function renderDebug() {
   } else {
     Array.from(dom.degGrid.querySelectorAll("input")).forEach((inp, i) => {
       inp.value = valStr(regs[i], state.regFmt);
-    }
+    });
   }
 }
 
 function updateReg(idx, val) {
   let n = val.toLowerCase().startsWith("0x") ? parseInt(val.slice(2), 16) : parseInt(val, 10);
-  if (isNaN(n))) return;
+  if (isNaN(n)) return;
   if (idx < 16) chip.v[idx] = n & 0xFF;
   else if (idx === 16) chip.i = n & 0xFFFF;
   else if (idx === 17) chip.pc = n & 0xFFFF;
@@ -632,13 +632,13 @@ function renderBPs() {
 }
 
 function renderWatches() {
-  dom.watchList.innerHTML =,
+  dom.watchList.innerHTML = "";
   chip.watchpoints.forEach(idx => {
     const c = document.createElement("span");
     c.className = "bp-chip";
     c.textContent = `V${fmtHex(idx, 1)} ✕`;
-    c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
-    dom.bpList.appendChild(c);
+    c,onclick = () => { chip.watchpoints.delete(idx); sync(); };
+    dom.watchList.appendChild(c);
   });
 }
 
