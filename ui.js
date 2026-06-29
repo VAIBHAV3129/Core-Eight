@@ -42,7 +42,8 @@ const dom = {
     mhome: document.querySelector("#mem-home-btn"),
     mwrite: document.querySelector("#mem-write-btn"),
     clearLog: document.querySelector("#log-clear"),
-    closeInspector: document.querySelector("#close-inspector")
+    closeInspector: document.querySelector("#close-inspector"),
+    fillMem: document.querySelector("#mem-fill-btn")
   },
   bpIn: document.querySelector("#bp-input"),
   bpCondIn: document.querySelector("#bp-cond-input"),
@@ -51,6 +52,9 @@ const dom = {
   watchList: document.querySelector("#watch-list"),
   mjmpIn: document.querySelector("#mem-jump-input"),
   mvalIn: document.querySelector("#mem-val-input"),
+  fillStart: document.querySelector("#mem-fill-start"),
+  fillEnd: document.querySelector("#mem-fill-end"),
+  fillVal: document.querySelector("#mem-fill-val"),
   stackView: document.querySelector("#stack-view"),
   inspector: document.querySelector("#op-inspector"),
   inspectorBody: document.querySelector("#inspector-body"),
@@ -175,6 +179,18 @@ function initUI() {
     const a = state.selAddr;
     const v = parseInt(dom.mvalIn.value, 16);
     if (a !== null && !isNaN(v)) { chip.mem[a] = v & 0xFF; sync(); }
+  };
+
+  dom.btns.fillMem.onclick = () => {
+    const start = parseInt(dom.fillStart.value, 16);
+    const end = parseInt(dom.fillEnd.value, 16);
+    const val = parseInt(dom.fillVal.value, 16);
+    if (!isNaN(start) && !isNaN(end) && !isNaN(val)) {
+      const s = Math.min(start, end) & 0xFFFF;
+      const e = Math.max(start, end) & 0xFFFF;
+      chip.mem.fill(val & 0xFF, s, e + 1);
+      sync();
+    }
   };
 
   dom.editor.oninput = () => {
