@@ -12,6 +12,7 @@ export class Assembler {
     EXPR_ERROR: 'E010'
   };
 
+  
   constructor(origin = 0x200) {
     this.origin = origin;
     this.symbols = {
