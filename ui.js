@@ -2,6 +2,9 @@ import { KEY_MAP, KEYPAD_LABELS, DEFAULT_ASM, FEATURE_DATA, GAME_DATA, SETTINGS_
 import { Chip8 } from './cpu.js';
 import { Assembler, Disassembler } from './assembler.js';
 
+const PIXEL_SIZE = 10;
+const GRID_GAP = 1;
+
 const dom = {
   root: document.documentElement,
   body: document.body,
@@ -123,8 +126,8 @@ function init() {
 
 function initScreen() {
   dom.ctx = dom.screen.getContext("2d");
-  dom.screen.width = chip.width;
-  dom.screen.height = chip.height;
+  dom.screen.width = chip.width * (PIXEL_SIZE + GRID_GAP);
+  dom.screen.height = chip.height * (PIXEL_SIZE + GRID_GAP);
   dom.ctx.imageSmoothingEnabled = false;
 }
 
@@ -542,9 +545,9 @@ function renderStatus() {
 function renderScreen() {
   if (!dom.ctx) return;
   
-  if (dom.screen.width !== chip.width || dom.screen.height !== chip.height) {
-    dom.screen.width = chip.width;
-    dom.screen.height = chip.height;
+  if (dom.screen.width !== chip.width * (PIXEL_SIZE + GRID_GAP) || dom.screen.height !== chip.height * (PIXEL_SIZE + GRID_GAP)) {
+    dom.screen.width = chip.width * (PIXEL_SIZE + GRID_GAP);
+    dom.screen.height = chip.height * (PIXEL_SIZE + GRID_GAP);
   }
 
   dom.ctx.clearRect(0, 0, dom.screen.width, dom.screen.height);
@@ -552,9 +555,9 @@ function renderScreen() {
 
   for (let i = 0; i < chip.display.length; i++) {
     if (chip.display[i] === 1) {
-      const x = i % chip.width;
-      const y = Math.floor(i / chip.width);
-      dom.ctx.fillRect(x, y, 1, 1);
+      const x = (i % chip.width) * (PIXEL_SIZE + GRID_GAP);
+      const y = Math.floor(i / chip.width) * (PIXEL_SIZE + GRID_GAP);
+      dom.ctx.fillRect(x, y, PIXEL_SIZE, PIXEL_SIZE);
     }
   }
 }
@@ -637,7 +640,7 @@ function renderWatches() {
     const c = document.createElement("span");
     c.className = "bp-chip";
     c.textContent = `V${fmtHex(idx, 1)} ✕`;
-    c,onclick = () => { chip.watchpoints.delete(idx); sync(); };
+    c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
     dom.watchList.appendChild(c);
   });
 }
