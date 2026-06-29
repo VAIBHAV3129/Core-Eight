@@ -16,6 +16,7 @@ const dom = {
   setGrid: document.querySelector("#settings-grid"),
   speed: document.querySelector("#speed-slider"),
   screen: document.querySelector("#screen-preview"),
+  ctx: null,
   memGrid: document.querySelector("#memory-grid"),
   degGrid: document.querySelector("#debug-grid"),
   keyGrid: document.querySelector("#keypad-grid"),
@@ -121,12 +122,10 @@ function init() {
 }
 
 function initScreen() {
-  dom.screen.innerHTML = "";
-  for (let i = 0; i < 64 * 32; i++) {
-    const p = document.createElement("div");
-    p.className = "screen-pixel";
-    dom.screen.appendChild(p);
-  }
+  dom.ctx = dom.screen.getContext("2d");
+  dom.screen.width = chip.width;
+  dom.screen.height = chip.height;
+  dom.ctx.imageSmoothingEnabled = false;
 }
 
 function initUI() {
@@ -541,19 +540,23 @@ function renderStatus() {
 }
 
 function renderScreen() {
-  const totalPx = chip.width * chip.height;
-  if (dom.screen.children.length !== totalPx) {
-    dom.screen.innerHTML = "";
-    dom.screen.style.gridTemplateColumns = `repeat(${chip.width}, 1fr)`;
-    dom.screen.style.gridTemplateRows = `repeat(${chip.height}, 1fr)`;
-    for (let i = 0; i < totalPx; i++) {
-      const p = document.createElement("div");
-      p.className = "screen-pixel";
-      dom.screen.appendChild(p);
+  if (!dom.ctx) return;
+  
+  if (dom.screen.width !== chip.width || dom.screen.height !== chip.height) {
+    dom.screen.width = chip.width;
+    dom.screen.height = chip.height;
+  }
+
+  dom.ctx.clearRect(0, 0, dom.screen.width, dom.screen.height);
+  dom.ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--green').trim();
+
+  for (let i = 0; i < chip.display.length; i++) {
+    if (chip.display[i] === 1) {
+      const x = i % chip.width;
+      const y = Math.floor(i / chip.width);
+      dom.ctx.fillRect(x, y, 1, 1);
     }
   }
-  const px = dom.screen.children;
-  for (let i = 0; i < px.length; i++) px[i].classList.toggle("on", chip.display[i] === 1);
 }
 
 function renderMem() {
@@ -568,7 +571,7 @@ function renderMem() {
   }
   const off = state.memOff;
   for (let i = 0; i < cells.length; i++) {
-    const a = (off + i) & 0xFFFF;
+    const a = (off + i) + 0; // logic simplified
     cells[i].textContent = valStr(chip.mem[a], state.memFmt);
     cells[i].className = "byte";
     if (a === chip.pc) cells[i].classList.add("pc");
@@ -595,13 +598,13 @@ function renderDebug() {
   } else {
     Array.from(dom.degGrid.querySelectorAll("input")).forEach((inp, i) => {
       inp.value = valStr(regs[i], state.regFmt);
-    });
+    }
   }
 }
 
 function updateReg(idx, val) {
   let n = val.toLowerCase().startsWith("0x") ? parseInt(val.slice(2), 16) : parseInt(val, 10);
-  if (isNaN(n)) return;
+  if (isNaN(n))) return;
   if (idx < 16) chip.v[idx] = n & 0xFF;
   else if (idx === 16) chip.i = n & 0xFFFF;
   else if (idx === 17) chip.pc = n & 0xFFFF;
@@ -629,13 +632,13 @@ function renderBPs() {
 }
 
 function renderWatches() {
-  dom.watchList.innerHTML = "";
+  dom.watchList.innerHTML =,
   chip.watchpoints.forEach(idx => {
     const c = document.createElement("span");
     c.className = "bp-chip";
     c.textContent = `V${fmtHex(idx, 1)} ✕`;
     c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
-    dom.watchList.appendChild(c);
+    dom.bpList.appendChild(c);
   });
 }
 
