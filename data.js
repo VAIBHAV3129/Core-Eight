@@ -47,11 +47,11 @@ export const FEATURE_DATA = [
 ];
 
 export const GAME_DATA = [
-  ["BRIX", "Paddle control and collision checks."],
-  ["PONG", "Classic duel with screen refresh."],
-  ["SPACE INVADERS", "Alien movement and projectiles."],
-  ["MAZE RUNNER", "Grid navigation and memory tracing."],
-  ["TETRIS", "Falling blocks for a small display."]
+  ["BRIX", "A classic brick-breaking challenge. Bounce the ball to clear the screen."],
+  ["PONG", "The original table-tennis simulator. Outmaneuver your opponent in a duel of speed."],
+  ["SPACE INVADERS", "Defend the planet from waves of descending extraterrestrial invaders."],
+  ["MAZE RUNNER", "Navigate a treacherous labyrinth. Find the exit before you lose your way."],
+  ["TETRIS", "Fit falling blocks into seamless lines. A timeless test of spatial awareness."]
 ];
 
 export const SETTINGS_DATA = [
