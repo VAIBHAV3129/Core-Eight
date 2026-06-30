@@ -212,6 +212,7 @@ function initUI() {
   dom.editor.oninput = () => {
     const lines = dom.editor.value.split("\n");
     dom.lines.innerHTML = lines.map((_, i) => i + 1).join("<br>");
+    asmEditor();
   };
 
   dom.scrubber.oninput = (e) => {
@@ -417,7 +418,7 @@ function asmEditor() {
     return;
   }
   const bStr = Array.from(res.bytes).map(b => fmtHex(b, 2)).join(" ");
-  dom.term.textContent = `OK: ${res.bytes.length} bytes\n\n${bStr}`;
+  dom.term.textContent = `Live: ${res.bytes.length} bytes\n\n${bStr}`;
 }
 
 function printLog(msg = lastMsg) {
