@@ -392,7 +392,7 @@ function run() {
     }
 
     chip.tick();
-    printLog("Running");
+    printLog("Running", false);
     sync();
     loop = requestAnimationFrame(tick);
   };
@@ -422,7 +422,9 @@ function asmEditor() {
   dom.term.textContent = `Live: ${res.bytes.length} bytes\n\n${bStr}`;
 }
 
-function printLog(msg = lastMsg) {
+function printLog(msg = lastMsg, forceFullRender = true) {
+  if (!forceFullRender && loop) return;
+
   dom.log.innerHTML = "";
   dom.log.textContent = `${msg}\n${"-".repeat(30)}\n`;
 
@@ -685,7 +687,13 @@ function updateReg(idx, val) {
 
 function renderKeys() {
   if (dom.keyGrid.children.length === 0) {
-    dom.keyGrid.innerHTML = KEYPAD_LABELS.map(l => `<button type="button">${l}</button>`).join("");
+    dom.keyGrid.innerHTML = KEYPAD_LABELS.map((l, i) => `<button type="button" data-key="${i}">${l}</button>`).join("");
+    dom.keyGrid.querySelectorAll("button").forEach(btn => {
+      const k = parseInt(btn.dataset.key);
+      btn.onmousedown = () => { chip.setKey(k, true); sync(); };
+      btn.onmouseup = () => { chip.setKey(k, false); sync(); };
+      btn.onmouseleave = () => { chip.setKey(k, false); sync(); };
+    });
   }
   Array.from(dom.keyGrid.children).forEach((b, i) => b.classList.toggle("down", chip.keys[i] === 1));
 }
