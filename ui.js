@@ -407,6 +407,7 @@ function pause() {
   loop = null;
   lastTime = 0;
   cycleRemainder = 0;
+  sync();
 }
 
 function asmEditor() {
