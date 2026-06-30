@@ -84,6 +84,20 @@ const state = {
   selAddr: null
 };
 
+const lastRenderState = {
+  pc: -1,
+  op: -1,
+  cycles: -1,
+  dt: -1,
+  st: -1,
+  v: new Uint8Array(16),
+  i: -1,
+  displayChecksum: 0,
+  memOff: -1,
+  keys: new Uint8Array(16),
+  stackLen: -1
+};
+
 function fmtHex(v, w = 2) { return v.toString(16).toUpperCase().padStart(w, "0"); }
 
 function valStr(v, fmt, w = 2) {
@@ -512,19 +526,70 @@ function applySetting(key, value) {
 }
 
 function sync() {
-  renderStatus();
-  renderScreen();
-  renderMem();
-  renderDebug();
-  renderKeys();
+  const isRunning = loop !== null;
+  
+  if (lastRenderState.pc !== chip.pc || lastRenderState.op !== chip.lastOp || lastRenderState.cycles !== chip.cycles || !isRunning) {
+    renderStatus();
+    lastRenderState.pc = chip.pc;
+    lastRenderState.op = chip.lastOp;
+    lastRenderState.cycles = chip.cycles;
+  }
+
+  const displayChecksum = chip.display.reduce((a, b) => a + b, 0);
+  if (lastRenderState.displayChecksum !== displayChecksum) {
+    renderScreen();
+    lastRenderState.displayChecksum = displayChecksum;
+  }
+
+  if (lastRenderState.pc !== chip.pc || lastRenderState.memOff !== state.memOff || !isRunning) {
+    renderMem();
+    lastRenderState.pc = chip.pc;
+    lastRenderState.memOff = state.memOff;
+  }
+
+  let regDirty = false;
+  for (let i = 0; i < 16; i++) {
+    if (lastRenderState.v[i] !== chip.v[i]) {
+      regDirty = true;
+      break;
+    }
+  }
+  if (regDirty || lastRenderState.i !== chip.i || lastRenderState.pc !== chip.pc || !isRunning) {
+    renderDebug();
+    lastRenderState.v.set(chip.v);
+    lastRenderState.i = chip.i;
+    lastRenderState.pc = chip.pc;
+  }
+
+  let keyDirty = false;
+  for (let i = 0; i < 16; i++) {
+    if (lastRenderState.keys[i] !== chip.keys[i]) {
+      keyDirty = true;
+      break;
+    }
+  }
+  if (keyDirty || !isRunning) {
+    renderKeys();
+    lastRenderState.keys.set(chip.keys);
+  }
+
+  if (lastRenderState.dt !== chip.delayTimer || lastRenderState.st !== chip.soundTimer) {
+    dom.timers.dt.textContent = chip.delayTimer;
+    dom.timers.st.textContent = chip.soundTimer;
+    lastRenderState.dt = chip.delayTimer;
+    lastRenderState.st = chip.soundTimer;
+  }
+
+  if (lastRenderState.stackLen !== chip.stack.length || !isRunning) {
+    renderStack();
+    lastRenderState.stackLen = chip.stack.length;
+  }
+
   renderBPs();
   renderWatches();
-  renderStack();
-  dom.timers.dt.textContent = chip.delayTimer;
-  dom.timers.st.textContent = chip.soundTimer;
-  
+
   dom.scrubber.max = Math.max(0, chip.stateHistory.length - 1);
-  if (!loop) {
+  if (!isRunning) {
     dom.scrubber.value = chip.stateHistory.length - 1;
     dom.cycleVal.textContent = dom.scrubber.value;
   }
