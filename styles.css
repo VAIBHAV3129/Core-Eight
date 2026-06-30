@@ -237,36 +237,42 @@
   .debug-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   #vm-log {
     min-height: 200px;
+    max-height: 500px;
     margin: 0;
     padding: 16px;
     background: #050307;
     color: #6dffba;
-    overflow-y: auto;
+    overflow: auto;
     white-space: pre-wrap;
     border: 1px solid rgba(109, 255, 186, 0.2);
     font-family: "Courier New", monospace;
     font-size: clamp(0.75rem, 1vw, 0.85rem);
     line-height: 1.5;
+    resize: vertical;
   }
 
+  #vm-log::-webkit-scrollbar { width: 8px; }
+  #vm-log::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+  #vm-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 0; }
+  #vm-log::-webkit-scrollbar-thumb:hover { background: var(--red); }
 
   .log-entry { cursor: pointer; transition: background 0.2s; }
   .log-entry:hover { background: rgba(255, 42, 22, 0.15); color: #fff; }
 
   .editor-shell { display: grid; grid-template-columns: auto 1fr; min-height: 360px; overflow: hidden; margin-top:
-  24px; border: 1px solid rgba(255, 224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
+    24px; border: 1px solid rgba(255, 224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
   .line-numbers { padding: 16px 12px; color: var(--muted); border-right: 1px solid rgba(255, 224, 163, 0.2);
-  background: rgba(0,0,0,0.3); text-align: right; line-height: 1.65; user-select: none; min-width: 48px; }
+    background: rgba(0,0,0,0.3); text-align: right; line-height: 1.65; user-select: none; min-width: 48px; }
   .code-area { width: 100%; min-height: 360px; margin: 0; padding: 16px; border: 0; outline: 0; resize: vertical;
-  color: var(--text); background: transparent; font-size: var(--editor-size); line-height: 1.65; white-space: pre;
-  tab-size: 2; }
+    color: var(--text); background: transparent; font-size: var(--editor-size); line-height: 1.65; white-space: pre;
+    tab-size: 2; }
   .terminal { margin-top: 16px; padding: 16px; color: var(--green); line-height: 1.5; border: 1px solid rgba(255,
-  224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); white-space: pre-wrap; }
+    224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); white-space: pre-wrap; }
 
   .memory-grid { display: grid; grid-template-columns: repeat(16, minmax(38px, 1fr)); gap: 8px; margin-top: 24px;
-  max-width: 700px; }
+    max-width: 700px; }
   .byte { min-height: 32px; display: grid; place-items: center; border: 1px solid rgba(255, 90, 40, 0.3);
-  background: rgba(0, 0, 0, 0.3); color: var(--text); font-size: 0.8rem; cursor: pointer; }
+    background: rgba(0, 0, 0, 0.3); color: var(--text); font-size: 0.8rem; cursor: pointer; }
   .byte:hover { background: rgba(255, 90, 40, 0.2); }
   .byte.selected { border-color: var(--green); color: var(--green); background: rgba(109, 255, 186, 0.1); }
   .byte.pc { border-color: #ffe66d; color: #ffe66d; }
@@ -276,35 +282,35 @@
 
   .debug-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; }
   .register { padding: 12px; border: 1px solid rgba(255, 224, 163, 0.2); background: rgba(0,0,0,0.2); display: flex;
-  flex-direction: column; }
+    flex-direction: column; }
   .register span { display: block; color: var(--muted); font-size: 0.7rem; margin-bottom: 8px; }
   .register input { background: rgba(0,0,0, 0.5); border: 1px solid rgba(255, 224, 163, 0.2); color: var(--green);
-  font-weight: 700; padding: 8px; font-size: 1rem; width: 100%; text-align: center; outline: none; }
+    font-weight: 700; padding: 8px; font-size: 1rem; width: 100%; text-align: center; outline: none; }
   .register input:focus { border-color: var(--red); box-shadow: 0 0 8px var(--red); }
 
   .debugger-secondary { margin-top: 32px; padding: 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,
-  224, 163, 0.2); border-radius: 8px; }
+    224, 163, 0.2); border-radius: 8px; }
   .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top:
-  16px; }
+    16px; }
   .stack-item { padding: 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); text-align: center;
-  font-size: 0.8rem; color: var(--green); }
+    font-size: 0.8rem; color: var(--green); }
 
   .keypad-grid { display: grid; grid-template-columns: repeat(4, 52px); gap: 12px; margin-top: 24px; }
   .keypad-grid button { min-height: 48px; border: 1px solid var(--border); background: var(--panel2); color:
-  var(--text); }
+    var(--text); }
   .keypad-grid button.down { color: #fff; border-color: var(--green); box-shadow: 0 0 16px rgba(109, 255, 186, 0.5);
   }
 
   .game-art { height: 80px; margin-bottom: 16px; border: 1px solid rgba(255, 224, 163, 0.2); background:
-  linear-gradient(90deg, transparent 45%, var(--red) 45% 55%, transparent 55%), repeating-linear-gradient(0deg,
-  rgba(109,255,186,0.2) 0 8px, transparent 8px 16px), rgba(0,0,0,0.3); }
+    linear-gradient(90deg, transparent 45%, var(--red) 45% 55%, transparent 55%), repeating-linear-gradient(0deg,
+    rgba(109,255,186,0.2) 0 8px, transparent 8px 16px), rgba(0,0,0,0.3); }
   .timeline { display: grid; gap: 16px; margin-top: 24px; padding: 16px; border: 1px solid rgba(255, 224, 163, 0.2);
-  border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
+    border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
   .timeline-item { padding-left: 16px; border-left: 4px solid var(--red); }
   .timeline-item strong { color: var(--green); }
 
   .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px;
-  padding: 12px; background: var(--panel2); }
+    padding: 12px; background: var(--panel2); }
   .setting-row span { color: var(--text); text-transform: uppercase; }
   .setting-row small { display: block; margin-top: 4px; color: var(--muted); text-transform: none; }
   .setting-row select, .setting-row input[type="range"] { accent-color: var(--red); max-width: 180px; }
@@ -313,40 +319,40 @@
   .settings-footer .credit-box { margin-bottom: 16px; }
   .source-links { display: flex; flex-wrap: wrap; gap: 12px; }
   .source-links a { display: inline-flex; align-items: center; min-height: 38px; padding: 8px 12px; border: 1px
-  solid rgba(109, 255, 186, 0.4); background: rgba(0, 0, 0, 0.2); text-transform: uppercase; letter-spacing: 0.1em;
-  font-size: 0.8rem; }
+    solid rgba(109, 255, 186, 0.4); background: rgba(0, 0, 0, 0.2); text-transform: uppercase; letter-spacing: 0.1em;
+    font-size: 0.8rem; }
 
   .custom-cursor { position: fixed; left: 0; top: 0; width: 26px; height: 26px; pointer-events: none; z-index: 99; }
   .custom-cursor.hand { border-left: 8px solid var(--text); border-top: 8px solid var(--text); box-shadow: 4px 4px 0
-  var(--red); }
+    var(--red); }
   .custom-cursor.crosshair { width: 30px; height: 30px; border: 1px solid var(--green); box-shadow: 0 0 10px
-  var(--green); }
+    var(--green); }
   .custom-cursor.crosshair::before { content: ""; position: absolute; background: var(--green); left: 14px; top:
-  -8px; width: 1px; height: 44px; }
+    -8px; width: 1px; height: 44px; }
   .custom-cursor.crosshair::after { content: ""; position: absolute; background: var(--green); left: -8px; top:
-  14px; width: 44px; height: 1px; }
+    14px; width: 44px; height: 1px; }
   .custom-cursor.pixel { width: 22px; height: 22px; background: var(--text); box-shadow: 6px 6px 0 var(--red), 12px
-  12px 0 rgba(0,0,0,0.5); }
+    12px 0 rgba(0,0,0,0.5); }
 
   .breakpoint-ctrl { display: flex; gap: 8px; margin-top: 16px; }
   .breakpoint-ctrl input { background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--text);
-  padding: 8px; width: 100px; }
+    padding: 8px; width: 100px; }
   .breakpoint-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .bp-chip { padding: 4px 8px; border: 1px solid var(--red); background: rgba(255, 42, 22, 0.1); color: var(--red);
-  font-size: 0.7rem; cursor: pointer; }
+    font-size: 0.7rem; cursor: pointer; }
   .bp-chip:hover { background: var(--red); color: #fff; }
 
   .inspector-hidden { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85);
-  z-index: 1000; display: none; place-items: center; }
+    z-index: 1000; display: none; place-items: center; }
   .inspector-hidden.active { display: grid; }
   .inspector-content { background: var(--panel2); border: 2px solid var(--green); padding: 32px; width: min(600px,
-  90vw); border-radius: 8px; box-shadow: 0 0 40px var(--green); }
+    90vw); border-radius: 8px; box-shadow: 0 0 40px var(--green); }
   .inspector-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
   .bit-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin: 16px 0; text-align: center; }
   .bit-cell { font-size: 0.7rem; padding: 4px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); }
   .bit-cell.active { color: var(--green); border-color: var(--green); }
   .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,
-  224, 163, 0.1); }
+    224, 163, 0.1); }
   .detail-row span { color: var(--muted); }
   .detail-row strong { color: var(--green); }
 
@@ -359,74 +365,8 @@
   }
 
   @keyframes driftGrid { 0% { transform: translate(0, 0); } 50% { transform: translate(-18px, 18px); } 100% {
-  transform: translate(0, 0); } }
+    transform: translate(0, 0); } }
   @keyframes noiseMove { 0% { transform: translate(0, 0); } 50% { transform: translate(10px, -8px); } 100% {
-  transform: translate(0, 0); } }
+    transform: translate(0, 0); } }
   @keyframes dashboardPulse { 0%, 100% { box-shadow: inset 5px 0 0 var(--red), 0 0 18px rgba(255, 42, 22, 0.3); }
-  50% { box-shadow: inset 5px 0 0 var(--green), 0 0 28px rgba(109, 255, 186, 0.3); } }
-
-  data.js
-
-  export const KEY_MAP = {
-    "1": 0x1, "2": 0x2, "3": 0x3, "4": 0xC,
-    q: 0x4, w: 0x5, e: 0x6, r: 0xD,
-    a: 0x7, s: 0x8, d: 0x9, f: 0xE,
-    z: 0xA, x: 0x0, c: 0xB, v: 0xF
-  };
-
-  export const KEYPAD_LABELS = ["1", "2", "3", "C", "4", "5", "6", "D", "7", "8", "9", "E", "A", "0", "B", "F"];
-
-  export const FONT_SET = [
-    0xF0,0x90,0x90,0x90,0xF0, 0x20,0x60,0x20,0x20,0x70,
-    0xF0,0x10,0xF0,0x80,0xF0, 0xF0,0x10,0xF0,0x10,0xF0,
-    0x90,0x90,0xF0,0x10,0x10, 0xF0,0x80,0xF0,0x10,0xF0,
-    0xF0,0x80,0xF0,0x90,0xF0, 0xF0,0x10,0x20,0x40,0x40,
-    0xF0,0x90,0xF0,0x90,0xF0, 0xF0,0x90,0xF0,0x10,0xF0,
-    0xF0,0x90,0xF0,0x90,0x90, 0xE0,0x90,0xE0,0x90,0xE0,
-    0xF0,0x80,0x80,0x80,0xF0, 0xE0,0x90,0x90,0x90,0xE0,
-    0xF0,0x80,0xF0,0x80,0xF0, 0xF0,0x80,0xF0,0x80,0x80
-  ];
-
-  export const DEFAULT_ASM = `START:
-    CLS
-    LD V0, 0x08
-    LD V1, 0x06
-    LD V2, 10
-    LD I, SPRITE_CORE
-    DRW V0, V1, 5
-    ADD V0, 1
-    SE V0, 0x10
-    JP SKIP_RESET
-    LD V0, 0x08
-
-  SKIP_RESET:
-    LD DT, V2
-    LD ST, V2
-    DRW V0, V1, 5
-    JP SKIP_RESET
-
-  SPRITE_CORE:
-    DB 0xF0, 0x90, 0xF0, 0x90, 0x90`;
-
-  export const FEATURE_DATA = [
-    ["Assembler", "Simple assembly with labels and ROM export."],
-    ["Debugger", "Edit registers, step opcodes, and set breakpoints."],
-    ["Memory", "Live map of 4KB RAM with PC tracking."],
-    ["Arcade", "Classic Chip-8 games in cabinet mode."]
-  ];
-
-  export const GAME_DATA = [
-    ["BRIX", "Paddle control and collision checks."],
-    ["PONG", "Classic duel with screen refresh."],
-    ["SPACE INVADERS", "Alien movement and projectiles."],
-    ["MAZE RUNNER", "Grid navigation and memory tracing."],
-    ["TETRIS", "Falling blocks for a small display."]
-  ];
-
-  export const SETTINGS_DATA = [
-    ["Theme", "Visual profile.", "theme", ["Amber Cathode", "Matrix Terminal", "Cyber-Whacker"]],
-    ["Cursor", "Pointer style.", "cursor", ["Retro Hand", "Crosshair", "Pixel Pointer", "System Cursor"]],
-    ["Mem Format", "Base for bytes.", "memoryFormat", ["Hexadecimal", "Decimal", "Binary"]],
-    ["Reg Format", "Base for registers.", "registerFormat", ["Hexadecimal", "Decimal", "Binary"]],
-    ["Pixelated Effect", "Toggle retro screen filter.", "pixelated", ["On", "Off"]]
-  ];
+    50% { box-shadow: inset 5px 0 0 var(--green), 0 0 28px rgba(109, 255, 186, 0.3); } }
