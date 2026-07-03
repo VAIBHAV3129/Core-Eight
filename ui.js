@@ -27,6 +27,7 @@ const dom = {
   editor: document.querySelector("#asm-editor"),
   lines: document.querySelector("#asm-lines"),
   term: document.querySelector("#asm-terminal"),
+  symbolNav: document.querySelector("#symbol-nav"),
   timers: { dt: document.querySelector("#dt-panel"), st: document.querySelector("#st-panel") },
   btns: {
     run: document.querySelector("#run-vm"),
@@ -410,6 +411,37 @@ function pause() {
   sync();
 }
 
+function jumpToLine(line) {
+  const text = dom.editor.value;
+  const lines = text.split("\n");
+  let pos = 0;
+  for (let i = 0; i < line - 1 && i < lines.length; i++) {
+    pos += lines[i].length + 1;
+  }
+  dom.editor.focus();
+  dom.editor.setSelectionRange(pos, pos);
+  
+  const lineHeight = 24.8;
+  dom.editor.scrollTop = (line - 1) * lineHeight;
+}
+
+function renderSymbols(symbolLines, labels, constants) {
+  dom.symbolNav.innerHTML = "";
+  
+  const allSymbols = [
+    ...Object.entries(labels).map(([name, addr]) => ({ name, line: symbolLines[name], type: 'label' })),
+    ...Object.entries(constants).map(([name, val]) => ({ name, line: symbolLines[name], type: 'constant' }))
+  ].sort((a, b) => a.name.localeCompare(b.name));
+
+  allSymbols.forEach(sym => {
+    const item = document.createElement("span");
+    item.className = `symbol-item ${sym.type}`;
+    item.textContent = sym.name;
+    item.onclick = () => jumpToLine(sym.line);
+    dom.symbolNav.appendChild(item);
+  });
+}
+
 function asmEditor() {
   const res = asm.assemble(dom.editor.value);
   bin = res.errors.length ? null : res.bytes;
@@ -420,6 +452,7 @@ function asmEditor() {
   }
   const bStr = Array.from(res.bytes).map(b => fmtHex(b, 2)).join(" ");
   dom.term.textContent = `Live: ${res.bytes.length} bytes\n\n${bStr}`;
+  renderSymbols(res.symbolLines, res.labels, res.constants);
 }
 
 function printLog(msg = lastMsg) {
