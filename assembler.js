@@ -12,13 +12,13 @@ export class Assembler {
     EXPR_ERROR: 'E010'
   };
 
-  
   constructor(origin = 0x200) {
     this.origin = origin;
     this.symbols = {
       labels: {},
       constants: {}
     };
+    this.symbolLines = {};
     this.rawConstants = {};
     this.macros = {};
     this.errors = [];
@@ -28,6 +28,7 @@ export class Assembler {
   assemble(source) {
     this.symbols.labels = {};
     this.symbols.constants = {};
+    this.symbolLines = {};
     this.rawConstants = {};
     this.macros = {};
     this.errors = [];
@@ -40,6 +41,7 @@ export class Assembler {
       bytes: Uint8Array.from(bytes),
       labels: this.symbols.labels,
       constants: this.symbols.constants,
+      symbolLines: this.symbolLines,
       errors: this.errors,
       symbolMap: this.generateSymbolMap()
     };
@@ -127,6 +129,7 @@ export class Assembler {
         const valStr = parts[1].trim();
         const col = text.indexOf(valStr) + 1;
         this.rawConstants[name] = valStr;
+        this.symbolLines[name] = line.line;
         this.resolveSymbol(name, line, col);
         return;
       }
@@ -198,7 +201,9 @@ export class Assembler {
       this.addError(line.line, 1, `Invalid label: "${label}"`, Assembler.ERR_CODES.INVALID_LABEL);
       return "";
     }
-    this.symbols.labels[label.toUpperCase()] = pc;
+    const upperLabel = label.toUpperCase();
+    this.symbols.labels[upperLabel] = pc;
+    this.symbolLines[upperLabel] = line.line;
     return line.text.slice(colon + 1).trim();
   }
 
