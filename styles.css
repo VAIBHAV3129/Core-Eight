@@ -259,7 +259,7 @@
   .log-entry { cursor: pointer; transition: background 0.2s; }
   .log-entry:hover { background: rgba(255, 42, 22, 0.15); color: #fff; }
 
-  .editor-shell { display: grid; grid-template-columns: 180px auto 1fr; min-height: 360px; overflow: hidden; margin-top:
+  .editor-shell { display: grid; grid-template-columns: 180px auto 1fr 120px; min-height: 360px; overflow: hidden; margin-top:
     24px; border: 1px solid rgba(255, 224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); }
   .symbol-nav { padding: 16px; border-right: 1px solid rgba(255, 224, 163, 0.2); background: rgba(0,0,0,0.4); overflow-y: auto; }
   .symbol-item { display: block; padding: 4px 8px; font-size: 0.75rem; color: var(--muted); cursor: pointer; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -271,6 +271,8 @@
   .code-area { width: 100%; min-height: 360px; margin: 0; padding: 16px; border: 0; outline: 0; resize: vertical;
     color: var(--text); background: transparent; font-size: var(--editor-size); line-height: 1.65; white-space: pre;
     tab-size: 2; }
+  .bin-view { padding: 16px 12px; color: var(--cyan); border-left: 1px solid rgba(255, 224, 163, 0.2); background: rgba(0,0,0,0.4); font-size: var(--editor-size); line-height: 1.65; text-align: right; overflow-y: hidden; overflow-x: hidden; user-select: none; }
+  .bin-line { min-height: 1.65em; }
   .terminal { margin-top: 16px; padding: 16px; color: var(--green); line-height: 1.5; border: 1px solid rgba(255,
     224, 163, 0.2); border-radius: 8px; background: rgba(0, 0, 0, 0.2); white-space: pre-wrap; }
 
