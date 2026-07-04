@@ -28,6 +28,7 @@ const dom = {
   lines: document.querySelector("#asm-lines"),
   term: document.querySelector("#asm-terminal"),
   symbolNav: document.querySelector("#symbol-nav"),
+  binView: document.querySelector("#bin-view"),
   timers: { dt: document.querySelector("#dt-panel"), st: document.querySelector("#st-panel") },
   btns: {
     run: document.querySelector("#run-vm"),
@@ -214,6 +215,11 @@ function initUI() {
     const lines = dom.editor.value.split("\n");
     dom.lines.innerHTML = lines.map((_, i) => i + 1).join("<br>");
     asmEditor();
+  };
+
+  dom.editor.onscroll = () => {
+    dom.lines.scrollTop = dom.editor.scrollTop;
+    dom.binView.scrollTop = dom.editor.scrollTop;
   };
 
   dom.scrubber.oninput = (e) => {
@@ -442,6 +448,20 @@ function renderSymbols(symbolLines, labels, constants) {
   });
 }
 
+function renderBinaryView(lineMap) {
+  dom.binView.innerHTML = "";
+  const textLines = dom.editor.value.split("\n");
+  
+  textLines.forEach((_, i) => {
+    const lineNum = i + 1;
+    const bytes = lineMap[lineNum];
+    const div = document.createElement("div");
+    div.className = "bin-line";
+    div.textContent = bytes ? bytes.map(b => fmtHex(b)).join(" ") : "";
+    dom.binView.appendChild(div);
+  });
+}
+
 function asmEditor() {
   const res = asm.assemble(dom.editor.value);
   bin = res.errors.length ? null : res.bytes;
@@ -453,6 +473,7 @@ function asmEditor() {
   const bStr = Array.from(res.bytes).map(b => fmtHex(b, 2)).join(" ");
   dom.term.textContent = `Live: ${res.bytes.length} bytes\n\n${bStr}`;
   renderSymbols(res.symbolLines, res.labels, res.constants);
+  renderBinaryView(res.lineMap);
 }
 
 function printLog(msg = lastMsg) {
