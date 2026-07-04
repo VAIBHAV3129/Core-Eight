@@ -35,10 +35,11 @@ export class Assembler {
     this.lines = this.clean(source);
     this.preprocess();
     this.firstPass();
-    const bytes = this.secondPass();
+    const result = this.secondPass();
     
     return {
-      bytes: Uint8Array.from(bytes),
+      bytes: Uint8Array.from(result.flatBytes),
+      lineMap: result.lineMap,
       labels: this.symbols.labels,
       constants: this.symbols.constants,
       symbolLines: this.symbolLines,
@@ -168,8 +169,10 @@ export class Assembler {
   }
 
   secondPass() {
-    const out = [];
+    const flatBytes = [];
+    const lineMap = {};
     let pc = this.origin;
+
     this.lines.forEach((line) => {
       const text = line.text;
       if (text.toUpperCase().includes(" EQU ")) return;
@@ -179,18 +182,21 @@ export class Assembler {
 
       if (body.toUpperCase().startsWith("DB ")) {
         const bytes = this.parseDb(body, line);
-        bytes.forEach((byte) => out.push(byte));
+        lineMap[line.line] = bytes;
+        bytes.forEach((byte) => flatBytes.push(byte));
         pc += bytes.length;
         return;
       }
 
       const word = this.encode(body, line);
       if (word !== null) {
-        out.push((word >> 8) & 0xFF, word & 0xFF);
+        const bytes = [(word >> 8) & 0xFF, word & 0xFF];
+        lineMap[line.line] = bytes;
+        flatBytes.push(...bytes);
         pc += 2;
       }
     });
-    return out;
+    return { flatBytes, lineMap };
   }
 
   takeLabel(line, pc) {
