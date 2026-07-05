@@ -165,7 +165,7 @@ export class Assembler {
   }
 
   evaluateRaw(raw, visited, line, col) {
-    return this.evaluateExpression(raw, line, col, visited);
+    return this.evaluateExpression(raw, visited, line, col);
   }
 
   secondPass() {
@@ -408,23 +408,49 @@ export class Disassembler {
   }
 
   disassemble(bytes, start = 0x200) {
+    const targets = this.scanTargets(bytes);
     const output = [];
+
     for (let pc = start; pc < bytes.length; pc += 2) {
       if (pc + 1 >= bytes.length) break;
+      
+      if (targets.has(pc)) {
+        output.push(`${this.fmtHex(pc, 4)}: LABEL_${this.fmtHex(pc, 3)}:`);
+      }
+
       const op = (bytes[pc] << 8) | bytes[pc + 1];
-      const decoded = this.decode(op);
+      const decoded = this.decode(op, targets);
       output.push(`${this.fmtHex(pc, 4)}: 0x${this.fmtHex(op, 4)} ${decoded}`);
     }
     return output.join("\n");
   }
 
-  decode(op) {
+  scanTargets(bytes) {
+    const targets = new Set();
+    for (let pc = 0x200; pc < bytes.length; pc += 2) {
+      if (pc + 1 >= bytes.length) break;
+      const op = (bytes[pc] << 8) | bytes[pc + 1];
+      const top = op & 0xF000;
+      const nnn = op & 0x0FFF;
+
+      if (top === 0x1000 || top === 0x2000) {
+        targets.add(nnn);
+      } else if (top === 0xB000) {
+        targets.add(nnn);
+      }
+    }
+    return targets;
+  }
+
+  decode(op, targets) {
     const x = (op & 0x0F00) >> 8;
     const y = (op & 0x00F0) >> 4;
     const n = op & 0x000F;
     const nn = op & 0x00FF;
     const nnn = op & 0x0FFF;
     const top = op & 0xF000;
+
+    const targetLabel = (addr) => targets.has(addr) ? `LABEL_${this.fmtHex(addr, 3)}` : `0x${this.fmtHex(addr, 3)}`;
 
     if (op === 0x00E0) return "CLS";
     if (op === 0x00EE) return "RET";
@@ -441,8 +467,8 @@ export class Disassembler {
     if (op === 0x00F6) return "WAITR_ANY";
     if (op === 0x00FD) return "RESOL_10x60";
     if (op === 0x00FE) return "RESOL_64x32";
-    if (top === 0x1000) return `JP 0x${this.fmtHex(nnn, 3)}`;
-    if (top === 0x2000) return `CALL 0x${this.fmtHex(nnn, 3)}`;
+    if (top === 0x1000) return `JP ${targetLabel(nnn)}`;
+    if (top === 0x2000) return `CALL ${targetLabel(nnn)}`;
     if (top === 0x3000) return `SE V${x}, 0x${this.fmtHex(nn, 2)}`;
     if (top === 0x4000) return `SNE V${x}, 0x${this.fmtHex(nn, 2)}`;
     if ((op & 0xF00F) === 0x5000) return `SE V${x}, V${y}`;
@@ -453,8 +479,8 @@ export class Disassembler {
       return `${aluOps[n]} V${x}, V${y}`;
     }
     if ((op & 0xF00F) === 0x9000) return `SNE V${x}, V${y}`;
-    if (top === 0xA000) return `LD I, 0x${this.fmtHex(nnn, 3)}`;
-    if (top === 0xB000) return `JP V0, 0x${this.fmtHex(nnn, 3)}`;
+    if (top === 0xA000) return `LD I, ${targetLabel(nnn)}`;
+    if (top === 0xB000) return `JP V0, ${targetLabel(nnn)}`;
     if (top === 0xC000) return `RND V${x}, 0x${this.fmtHex(nn, 2)}`;
     if (top === 0xD000) return `DRW V${x}, V${y}, ${n}`;
     if ((op & 0xF0FF) === 0xE09E) return `SKP V${x}`;
