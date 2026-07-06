@@ -231,6 +231,17 @@ function initUI() {
   };
 
   window.onkeydown = (e) => {
+    const activePanel = document.querySelector(".panel.active").id;
+    if (activePanel === "memory" && state.selAddr !== null) {
+      const hexChars = "0123456789ABCDEF";
+      const char = e.key.toUpperCase();
+      if (hexChars.includes(char)) {
+        const val = parseInt(char, 16);
+        chip.mem[state.selAddr] = val;
+        sync();
+        return;
+      }
+    }
     const key = KEY_MAP[e.key] || KEY_MAP[e.key.toLowerCase()];
     if (key !== undefined) chip.setKey(key, true);
   };
