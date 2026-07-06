@@ -20,6 +20,7 @@ export class Chip8 {
     this.reset();
   }
 
+  
   reset() {
     this.mem.fill(0);
     this.v.fill(0);
