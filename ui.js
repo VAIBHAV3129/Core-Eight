@@ -65,7 +65,8 @@ const dom = {
   inspector: document.querySelector("#op-inspector"),
   inspectorBody: document.querySelector("#inspector-body"),
   scrubber: document.querySelector("#cycle-scrubber"),
-  cycleVal: document.querySelector("#cycle-val")
+  cycleVal: document.querySelector("#cycle-val"),
+  liveSync: document.querySelector("#live-sync-toggle")
 };
 
 const chip = new Chip8();
@@ -83,7 +84,8 @@ const state = {
   memFmt: "Hexadecimal",
   regFmt: "Hexadecimal",
   memOff: 0x200,
-  selAddr: null
+  selAddr: null,
+  liveSync: false
 };
 
 const lastRenderState = {
@@ -165,6 +167,8 @@ function initUI() {
   dom.btns.imp.onchange = importRom;
   dom.btns.clearLog.onclick = () => { chip.history = []; printLog("Log cleared"); };
   dom.btns.closeInspector.onclick = () => dom.inspector.classList.remove("active");
+
+  dom.liveSync.onchange = (e) => { state.liveSync = e.target.checked; };
 
   dom.btns.addBp.onclick = () => {
     const a = parseInt(dom.bpIn.value, 16);
@@ -481,6 +485,12 @@ function asmEditor() {
     dom.term.textContent = `Error:\n${errText}`;
     return;
   }
+  
+  if (state.liveSync && bin) {
+    chip.mem.set(bin, 0x200);
+    sync();
+  }
+
   const bStr = Array.from(res.bytes).map(b => fmtHex(b, 2)).join(" ");
   dom.term.textContent = `Live: ${res.bytes.length} bytes\n\n${bStr}`;
   renderSymbols(res.symbolLines, res.labels, res.constants);
