@@ -11,6 +11,7 @@ export class Chip8 {
     this.stack = [];
     this.bps = new Map();
     this.watchpoints = new Set();
+    this.memWatchpoints = new Set();
     this.prevV = new Uint8Array(16);
     this.waitingForKey = null;
     this.halted = false;
@@ -20,7 +21,6 @@ export class Chip8 {
     this.reset();
   }
 
-  
   reset() {
     this.mem.fill(0);
     this.v.fill(0);
@@ -60,6 +60,12 @@ export class Chip8 {
     return (this.mem[this.pc] << 8) | this.mem[this.pc + 1];
   }
 
+  writeMem(addr, val) {
+    const a = addr & 0xFFFF;
+    this.mem[a] = val & 0xFF;
+    return this.memWatchpoints.has(a);
+  }
+
   cycle() {
     if (this.halted) return "HALTED";
     if (this.waitingForKey !== null) return "waiting";
@@ -80,9 +86,10 @@ export class Chip8 {
     this.lastOp = op;
     this.pc = (this.pc + 2) & 0xFFFF;
     this.cycles += 1;
-    this.exec(op);
+    
+    const memHit = this.exec(op);
 
-    if (this.checkWatches()) return "WATCHPOINT_HIT";
+    if (this.checkWatches() || memHit) return "WATCHPOINT_HIT";
 
     this.history.push({
       cycle: this.cycles,
@@ -168,6 +175,7 @@ export class Chip8 {
     const n = op & 0x000F;
     const nn = op & 0x00FF;
     const nnn = op & 0x0FFF;
+    let hit = false;
 
     if (op === 0x00E0) this.display.fill(0);
     else if (op === 0x00EE) this.pc = this.stack.pop() ?? 0x200;
@@ -223,11 +231,13 @@ export class Chip8 {
     else if ((op & 0xF0FF) === 0xF029) this.i = 0x50 + (this.v[x] & 0xF) * 5;
     else if ((op & 0xF0FF) === 0xF033) {
       const val = this.v[x];
-      this.mem[this.i & 0xFFFF] = Math.floor(val / 100);
-      this.mem[(this.i + 1) & 0xFFFF] = Math.floor((val % 100) / 10);
-      this.mem[(this.i + 2) & 0xFFFF] = val % 10;
+      hit |= this.writeMem(this.i, Math.floor(val / 100));
+      hit |= this.writeMem(this.i + 1, Math.floor((val % 100) / 10));
+      hit |= this.writeMem(this.i + 2, val % 10);
     } else if ((op & 0xF0FF) === 0xF055) {
-      for (let idx = 0; idx <= x; idx++) this.mem[(this.i + idx) & 0xFFFF] = this.v[idx];
+      for (let idx = 0; idx <= x; idx++) {
+        hit |= this.writeMem(this.i + idx, this.v[idx]);
+      }
       if (this.quirks.incrementI) this.i = (this.i + x + 1) & 0xFFFF;
     } else if ((op & 0xF0FF) === 0xF065) {
       for (let idx = 0; idx <= x; idx++) this.v[idx] = this.mem[(this.i + idx) & 0xFFFF];
@@ -235,6 +245,7 @@ export class Chip8 {
     } else {
       throw new Error(`Op Error: 0x${op.toString(16).toUpperCase()}`);
     }
+    return hit;
   }
 
   alu(x, y, mode) {
