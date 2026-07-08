@@ -187,6 +187,13 @@ function initUI() {
       chip.watchpoints.add(parseInt(v.slice(1), 16));
       dom.watchIn.value = "";
       sync();
+    } else if (v.startsWith("0X")) {
+      const addr = parseInt(v.slice(2), 16);
+      if (!isNaN(addr)) {
+        chip.memWatchpoints.add(addr & 0xFFFF);
+        dom.watchIn.value = "";
+        sync();
+      }
     }
   };
 
@@ -200,7 +207,7 @@ function initUI() {
   dom.btns.mwrite.onclick = () => {
     const a = state.selAddr;
     const v = parseInt(dom.mvalIn.value, 16);
-    if (a !== null && !isNaN(v)) { chip.mem[a] = v & 0xFF; sync(); }
+    if (a !== null && !isNaN(v)) { chip.writeMem(a, v); sync(); }
   };
 
   dom.btns.fillMem.onclick = () => {
@@ -210,7 +217,7 @@ function initUI() {
     if (!isNaN(start) && !isNaN(end) && !isNaN(val)) {
       const s = Math.min(start, end) & 0xFFFF;
       const e = Math.max(start, end) & 0xFFFF;
-      chip.mem.fill(val & 0xFF, s, e + 1);
+      for (let i = s; i <= e; i++) chip.writeMem(i, val);
       sync();
     }
   };
@@ -241,7 +248,7 @@ function initUI() {
       const char = e.key.toUpperCase();
       if (hexChars.includes(char)) {
         const val = parseInt(char, 16);
-        chip.mem[state.selAddr] = val;
+        chip.writeMem(state.selAddr, val);
         sync();
         return;
       }
@@ -366,7 +373,7 @@ function step(v = true) {
       lastMsg = `BP Hit at 0x${fmtHex(chip.pc, 4)}`;
     } else if (dec === "WATCHPOINT_HIT") {
       pause();
-      lastMsg = "Watchpoint triggered: Register changed";
+      lastMsg = "Watchpoint triggered: Value changed";
     } else if (dec === "waiting") {
       lastMsg = "Waiting for key...";
     } else {
@@ -778,11 +785,20 @@ function renderBPs() {
 
 function renderWatches() {
   dom.watchList.innerHTML = "";
+  
   chip.watchpoints.forEach(idx => {
     const c = document.createElement("span");
     c.className = "bp-chip";
     c.textContent = `V${fmtHex(idx, 1)} ✕`;
     c.onclick = () => { chip.watchpoints.delete(idx); sync(); };
+    dom.watchList.appendChild(c);
+  });
+
+  chip.memWatchpoints.forEach(addr => {
+    const c = document.createElement("span");
+    c.className = "bp-chip";
+    c.textContent = `0x${fmtHex(addr, 3)} ✕`;
+    c.onclick = () => { chip.memWatchpoints.delete(addr); sync(); };
     dom.watchList.appendChild(c);
   });
 }
