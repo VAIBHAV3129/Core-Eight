@@ -224,7 +224,7 @@ function initUI() {
 
   dom.editor.oninput = () => {
     const lines = dom.editor.value.split("\n");
-    dom.lines.innerHTML = lines.map((_, i) => i + 1).join("<br>");
+    dom.lines.innerHTML = lines.map((_, i) => `<span class="line-number">${i + 1}</span>`).join("");
     asmEditor();
   };
 
@@ -487,9 +487,16 @@ function renderBinaryView(lineMap) {
 function asmEditor() {
   const res = asm.assemble(dom.editor.value);
   bin = res.errors.length ? null : res.bytes;
+  
+  const lineNodes = dom.lines.querySelectorAll(".line-number");
+  lineNodes.forEach(n => n.classList.remove("error"));
+
   if (res.errors.length) {
     const errText = res.errors.map(e => `[${e.code}] Line ${e.line}, Col ${e.col}: ${e.message}`).join("\n");
     dom.term.textContent = `Error:\n${errText}`;
+    res.errors.forEach(err => {
+      if (lineNodes[err.line - 1]) lineNodes[err.line - 1].classList.add("error");
+    });
     return;
   }
   
