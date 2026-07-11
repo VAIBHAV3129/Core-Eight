@@ -29,6 +29,7 @@ const dom = {
   term: document.querySelector("#asm-terminal"),
   symbolNav: document.querySelector("#symbol-nav"),
   binView: document.querySelector("#bin-view"),
+  highlightLayer: document.querySelector("#highlight-layer"),
   timers: { dt: document.querySelector("#dt-panel"), st: document.querySelector("#st-panel") },
   btns: {
     run: document.querySelector("#run-vm"),
@@ -225,12 +226,15 @@ function initUI() {
   dom.editor.oninput = () => {
     const lines = dom.editor.value.split("\n");
     dom.lines.innerHTML = lines.map((_, i) => `<span class="line-number">${i + 1}</span>`).join("");
+    updateHighlighting();
     asmEditor();
   };
 
   dom.editor.onscroll = () => {
     dom.lines.scrollTop = dom.editor.scrollTop;
     dom.binView.scrollTop = dom.editor.scrollTop;
+    dom.highlightLayer.scrollTop = dom.editor.scrollTop;
+    dom.highlightLayer.scrollLeft = dom.editor.scrollLeft;
   };
 
   dom.scrubber.oninput = (e) => {
@@ -482,6 +486,45 @@ function renderBinaryView(lineMap) {
     div.textContent = bytes ? bytes.map(b => fmtHex(b)).join(" ") : "";
     dom.binView.appendChild(div);
   });
+}
+
+function updateHighlighting() {
+  let code = dom.editor.value;
+  
+  code = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const rules = [
+    { regex: /;.*$/gm, cls: "hl-comment" },
+    { regex: /\b[A-Z_][A-Z0-9_]*\s*:/gi, cls: "hl-label" },
+    { regex: /\b(CLS|RET|HLTK|HLTP|HLTR|HIRES|LORES|WAITK|WAITR|WAITK_V0|JP|CALL|SE|SNE|LD|ADD|OR|AND|XOR|SUB|SUBN|SHR|SHL|RND|DRW|SKP|SKNP|DB|EQU)\b/gi, cls: "hl-mnemonic" },
+    { regex: /\bV[0-9A-F]\b/gi, cls: "hl-reg" },
+    { regex: /(0x[0-9A-F]+|%[01]+|\b\d+\b)/gi, cls: "hl-val" }
+  ];
+
+  const tokens = [];
+  rules.forEach(({ regex, cls }, idx) => {
+    let match;
+    while ((match = regex.exec(code)) !== null) {
+      tokens.push({ start: match.index, end: match.index + match[0].length, cls, priority: idx });
+    }
+  });
+
+  tokens.sort((a, b) => a.start - b.start || b.end - a.end);
+
+  let result = "";
+  let lastIdx = 0;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token.start < lastIdx) continue;
+    
+    result += code.slice(lastIdx, token.start);
+    result += `<span class="${token.cls}">${code.slice(token.start, token.end)}</span>`;
+    lastIdx = token.end;
+  }
+  result += code.slice(lastIdx);
+  
+  dom.highlightLayer.innerHTML = result + "\n";
 }
 
 function asmEditor() {
