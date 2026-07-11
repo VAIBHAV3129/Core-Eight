@@ -270,9 +270,16 @@
     background: rgba(0,0,0,0.3); text-align: right; line-height: 1.65; user-select: none; min-width: 48px; }
   .line-number { display: block; transition: color 0.2s; }
   .line-number.error { color: var(--red); font-weight: 900; text-shadow: 0 0 8px var(--red); }
+  .editor-container { position: relative; flex: 1; overflow: hidden; }
   .code-area { width: 100%; min-height: 360px; margin: 0; padding: 16px; border: 0; outline: 0; resize: vertical;
-    color: var(--text); background: transparent; font-size: var(--editor-size); line-height: 1.65; white-space: pre;
-    tab-size: 2; }
+    color: transparent; background: transparent; font-size: var(--editor-size); line-height: 1.65; white-space: pre;
+    tab-size: 2; position: relative; z-index: 2; caret-color: var(--text); }
+  .highlight-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 16px; font-size: var(--editor-size); line-height: 1.65; white-space: pre; pointer-events: none; z-index: 1; color: var(--text); overflow: hidden; }
+  .hl-mnemonic { color: var(--green); font-weight: 900; }
+  .hl-reg { color: var(--cyan); }
+  .hl-label { color: var(--red); font-weight: 900; }
+  .hl-val { color: #fff; }
+  .hl-comment { color: var(--muted); font-style: italic; }
   .bin-view { padding: 16px 12px; color: var(--cyan); border-left: 1px solid rgba(255, 224, 163, 0.2); background: rgba(0,0,0,0.4); font-size: var(--editor-size); line-height: 1.65; text-align: right; overflow-y: hidden; overflow-x: hidden; user-select: none; }
   .bin-line { min-height: 1.65em; }
   .terminal { margin-top: 16px; padding: 16px; color: var(--green); line-height: 1.5; border: 1px solid rgba(255,
