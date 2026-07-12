@@ -29,7 +29,7 @@
 </div>
 
 
-## CHIP-8 Web IDE & Emulator
+# CHIP-8 Web IDE & Emulator
 Welcome to the CHIP-8 Web IDE and Emulator. This project gives you a complete development environment right in your web browser. You can write custom assembly, debug it in real-time, and run it through a cycle-accurate emulator without needing to install any external build tools or set up a backend server.
 
 Because the app runs fully client-side, it is hosted entirely on GitHub Pages for a zero-installand a super fast setup setup.
@@ -76,14 +76,14 @@ Because everything is completely built with standard HTML, CSS, and vanilla Java
    ```bash
    git clone [https://github.com/VAIBHAV3129/Core-Eight.git](https://github.com/VAIBHAV3129/Core-Eight.git)
    cd Core-Eight
-   
+
 To avoid cross-origin (CORS) issues with ES6 modules, serve the files using a basic local development server.
 Bash
 
-# Using Python
+### Using Python
 python -m http.server 8000
 
-# Or if you prefer Node.js:
+### Or if you prefer Node.js:
 npx serve .
 Once your server is running, open http://localhost:8000 in your web browser.
 
@@ -93,14 +93,14 @@ Once your server is running, open http://localhost:8000 in your web browser.
 Writing and Assembling Code
 Use the built-in editor to start writing your CHIP-8 assembly. The editor will automatically highlight mnemonics, registers, and memory addresses to help you read your code. When you are ready, click Assemble to turn your code into a binary formatting ig. Any errors will pop up right in the terminal output.
 
-# Debugging and Execution
+## Debugging and Execution
 - Step Control: You can walk through your code one instruction at a time using the Step and Step-Over functions.
 - Breakpoints: Pause your program exactly when you need to by setting breakpoints on specific memory addresses, or set them to trigger only when a register hits a certain value.
 - Watchpoints: Keep an eye on specific registers or memory addresses. The emulator will automatically pause if their values change.
 - Time Travel: Made a mistake? Use the cycle scrubber slider at the bottom of the screen to rewind the execution and see exactly what happened in previous states.
 
 
-# Memory and Register Inspection
+## Memory and Register Inspection
 You can click on any byte in the Memory Grid to select it, and then type to overwrite its value while the program is running. You can also modify registers directly from the Debug Grid by typing in new hexadecimal values.
 
 
