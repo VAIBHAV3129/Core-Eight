@@ -51,7 +51,9 @@ Because the app runs fully client-side, it is hosted entirely on GitHub Pages fo
 ## Intro
 I had always been facinated by the early computing systems and all that it can do, while it might seen insignificant in the modern world where the technolgy and the software have grown so much that the modern systems are incredibly efficient and some over a 100x more powerful compared to the ones from the past,( and CoreEight which is a 8 bit system) and thus was the inspiration to make this project, it was an exhilarating journey filled with ups and downs but that was what made it all the more satisfying and enjoyable, it also helped me learn a lot of new things, Writing the emulator core was only half the fun,... the real challenge was building a working ecosystem around it. Crafting a custom assembler, tracking machine state history became a playground for me to explore how IDEs work. In short It’s a love letter to low-level engineering, built entirely with vanilla web technologies.lol!!
 
-[![Watch the CoreEight Demo](https://v1.screenshot.co/https://player.vimeo.com/video/1209277331)](https://vimeo.com/1209277331)
+What the Demo video here!!
+https://vimeo.com/1209277331?share=copy&fl=sv&fe=ci
+
 
 ## Core Features
 
@@ -122,5 +124,11 @@ Created and maintained by L K Vaibhav.
 ## License
 This project is open-source and available under the MIT License.
 
+
 ## Disclaimer
 This software is developed strictly for educational, development, and historical emulation purposes. Core-Eight does not include, host, or distribute any copyrighted commercial game ROMs or proprietary software binaries. Users are completely responsible for ensuring they have the legal right and necessary permissions to use any external ROM files they upload into this environment.
+
+
+
+
+<img width="596" height="121" alt="Screen Shot 2026-07-12 at 22 16 39 PM" src="https://github.com/user-attachments/assets/0d4f48c1-e990-4c56-9dd4-3f0b0e7b8ebb" />
