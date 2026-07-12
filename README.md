@@ -51,6 +51,8 @@ Because the app runs fully client-side, it is hosted entirely on GitHub Pages fo
 ## Intro
 I had always been facinated by the early computing systems and all that it can do, while it might seen insignificant in the modern world where the technolgy and the software have grown so much that the modern systems are incredibly efficient and some over a 100x more powerful compared to the ones from the past,( and CoreEight which is a 8 bit system) and thus was the inspiration to make this project, it was an exhilarating journey filled with ups and downs but that was what made it all the more satisfying and enjoyable, it also helped me learn a lot of new things, Writing the emulator core was only half the fun,... the real challenge was building a working ecosystem around it. Crafting a custom assembler, tracking machine state history became a playground for me to explore how IDEs work. In short It’s a love letter to low-level engineering, built entirely with vanilla web technologies.lol!!
 
+[![Watch the CoreEight Demo](https://v1.screenshot.co/https://player.vimeo.com/video/1209277331)](https://vimeo.com/1209277331)
+
 ## Core Features
 
 Here is a quick look at what this tool can do:
