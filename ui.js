@@ -67,7 +67,8 @@ const dom = {
   inspectorBody: document.querySelector("#inspector-body"),
   scrubber: document.querySelector("#cycle-scrubber"),
   cycleVal: document.querySelector("#cycle-val"),
-  liveSync: document.querySelector("#live-sync-toggle")
+  liveSync: document.querySelector("#live-sync-toggle"),
+  heatmapToggle: document.querySelector("#heatmap-toggle")
 };
 
 const chip = new Chip8();
@@ -86,7 +87,8 @@ const state = {
   regFmt: "Hexadecimal",
   memOff: 0x200,
   selAddr: null,
-  liveSync: false
+  liveSync: false,
+  heatmap: false
 };
 
 const lastRenderState = {
@@ -170,6 +172,7 @@ function initUI() {
   dom.btns.closeInspector.onclick = () => dom.inspector.classList.remove("active");
 
   dom.liveSync.onchange = (e) => { state.liveSync = e.target.checked; };
+  dom.heatmapToggle.onchange = (e) => { state.heatmap = e.target.checked; sync(); };
 
   dom.btns.addBp.onclick = () => {
     const a = parseInt(dom.bpIn.value, 16);
@@ -776,6 +779,15 @@ function renderMem() {
     const a = (off + i) & 0xFFFF;
     cells[i].textContent = valStr(chip.mem[a], state.memFmt);
     cells[i].className = "byte";
+    
+    if (state.heatmap) {
+      const count = chip.accessMap[a];
+      const alpha = Math.min(count / 100, 0.8);
+      cells[i].style.backgroundColor = `rgba(255, 42, 22, ${alpha})`;
+    } else {
+      cells[i].style.backgroundColor = "";
+    }
+
     if (a === chip.pc) cells[i].classList.add("pc");
     if (a === chip.pc - 2 || a === chip.pc - 1) cells[i].classList.add("read");
     if (chip.bps.has(a)) cells[i].classList.add("breakpoint");
