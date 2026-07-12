@@ -67,8 +67,7 @@ const dom = {
   inspectorBody: document.querySelector("#inspector-body"),
   scrubber: document.querySelector("#cycle-scrubber"),
   cycleVal: document.querySelector("#cycle-val"),
-  liveSync: document.querySelector("#live-sync-toggle"),
-  heatmapToggle: document.querySelector("#heatmap-toggle")
+  liveSync: document.querySelector("#live-sync-toggle")
 };
 
 const chip = new Chip8();
@@ -87,8 +86,7 @@ const state = {
   regFmt: "Hexadecimal",
   memOff: 0x200,
   selAddr: null,
-  liveSync: false,
-  heatmap: false
+  liveSync: false
 };
 
 const lastRenderState = {
@@ -172,7 +170,6 @@ function initUI() {
   dom.btns.closeInspector.onclick = () => dom.inspector.classList.remove("active");
 
   dom.liveSync.onchange = (e) => { state.liveSync = e.target.checked; };
-  dom.heatmapToggle.onchange = (e) => { state.heatmap = e.target.checked; sync(); };
 
   dom.btns.addBp.onclick = () => {
     const a = parseInt(dom.bpIn.value, 16);
@@ -758,8 +755,7 @@ function renderScreen() {
   for (let i = 0; i < chip.display.length; i++) {
     if (chip.display[i] === 1) {
       const x = (i % chip.width) * (PIXEL_SIZE + GRID_GAP);
-      const y = Math.floor(i / chip.width) * (PIXEL_SIZE + GRID_GAP);
-      dom.ctx.fillRect(x, y, PIXEL_SIZE, PIXEL_SIZE);
+      const y = ( participants.height * (PIXEL_SIZE + GRID_GAP));
     }
   }
 }
@@ -803,13 +799,8 @@ function renderDebug() {
     dom.degGrid.innerHTML = lbls.map((l, i) => `
       <div class="register">
         <span>${l}</span>
-        <input type="text" data-reg="${i}" value="${valStr(regs[i], state.regFmt)}">
-      </div>
-    `).join("");
-    dom.degGrid.querySelectorAll("input").forEach(inp => {
-      inp.onchange = (e) => updateReg(parseInt(e.target.dataset.reg), e.target.value);
-    });
-  } else {
+        <input type="text" data-reg="${i}" value="${valStr(regs[i], state.regFmt)}}");
+    } else {
     Array.from(dom.degGrid.querySelectorAll("input")).forEach((inp, i) => {
       inp.value = valStr(regs[i], state.regFmt);
     });
