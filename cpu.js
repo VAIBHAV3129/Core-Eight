@@ -3,6 +3,7 @@ import { FONT_SET } from './data.js';
 export class Chip8 {
   constructor() {
     this.mem = new Uint8Array(65536);
+    this.accessMap = new Uint32Array(65536);
     this.v = new Uint8Array(16);
     this.width = 64;
     this.height = 32;
@@ -23,6 +24,7 @@ export class Chip8 {
 
   reset() {
     this.mem.fill(0);
+    this.accessMap.fill(0);
     this.v.fill(0);
     this.width = 64;
     this.height = 32;
@@ -57,11 +59,15 @@ export class Chip8 {
   }
 
   fetch() {
-    return (this.mem[this.pc] << 8) | this.mem[this.pc + 1];
+    const addr = this.pc & 0xFFFF;
+    this.accessMap[addr]++;
+    this.accessMap[(addr + 1) & 0xFFFF]++;
+    return (this.mem[addr] << 8) | this.mem[addr + 1];
   }
 
   writeMem(addr, val) {
     const a = addr & 0xFFFF;
+    this.accessMap[a]++;
     this.mem[a] = val & 0xFF;
     return this.memWatchpoints.has(a);
   }
