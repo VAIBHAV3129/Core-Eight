@@ -45,6 +45,7 @@ Because the app runs fully client-side, it is hosted entirely on GitHub Pages fo
 * [Author](#author)
 * [License](#license)
 * [Disclaimer](#disclaimer)
+* [Resources](#resources)
 
 -----------------------------------------------------------
 
@@ -59,8 +60,8 @@ https://vimeo.com/1209277331?share=copy&fl=sv&fe=ci
 
 Here is a quick look at what this tool can do:
 
-* **Emulator Core:** A highly accurate CHIP-8 emulator that lets you configure specific hardware quirks, like shift logic, I-register incrementing, and sprite draw wrapping.
-* **Custom Assembler:** Write your own CHIP-8 assembly code. The assembler supports labels, constants, inline macros, and math expressions, and it will give you clear syntax error reports if something goes wrong.
+* **Emulator Core:** A highly accurate CHIP-8 emulator that lets you configure specific hardware parts, like shift logic, I-register incrementing, and sprite draw wrapping.
+* **Custom Assembler:** Write your own CHIP-8 assembly code. The assembler supports labels, constants, inline macros, and math expressions, and it will give you clear syntax error reports and that only if something goes wrong( which happens like most of the time for me).
 * **Disassembler:** If you have an existing binary ROM, you can load it in and reverse-engineer it back into readable assembly code with automatically generated labels.
 * **Advanced Debugger:** Dig into your code while it runs. The debugger includes a memory hex editor, a way to monitor your registers and stack, conditional breakpoints, memory watchpoints, and a unique execution scrubber that actually lets you rewind the virtual machine state.
 * **Retro UI:** It has multiple visual themes and a variety of custom options
@@ -125,8 +126,18 @@ Created and maintained by L K Vaibhav.
 This project is open-source and available under the MIT License.
 
 
+## Resources and Citations
+- https://tobiasvl.github.io/blog/write-a-chip-8-emulator/
+- https://en.wikipedia.org/wiki/CHIP-8
+- https://en.wikipedia.org/wiki/Microcomputer
+- https://austinmorlan.com/posts/chip8_emulator/
+- https://www.cs.columbia.edu/~sedwards/classes/2016/4840-spring/designs/Chip8.pdf
+and a few others
+
 ## Disclaimer
 This software is developed strictly for educational, development, and historical emulation purposes. Core-Eight does not include, host, or distribute any copyrighted commercial game ROMs or proprietary software binaries. Users are completely responsible for ensuring they have the legal right and necessary permissions to use any external ROM files they upload into this environment.
+
+
 
 
 
